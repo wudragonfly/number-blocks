@@ -25,9 +25,10 @@
             100% { transform: translateY(-110vh) rotate(720deg); opacity: 0; }
         }
 
-        .controls { position: fixed; top: 10px; left: 10px; display: flex; gap: 6px; z-index: 10; }
+        .controls { position: fixed; top: 10px; left: 10px; display: flex; flex-direction: column; gap: 6px; z-index: 10; }
         .control-panel { display: flex; flex-direction: column; gap: 3px; background: rgba(255,255,255,0.2); padding: 8px; border-radius: 10px; backdrop-filter: blur(10px); }
         .control-panel label { color: white; font-size: 9px; text-transform: uppercase; letter-spacing: 1px; }
+        .control-panel.disabled { opacity: 0.5; pointer-events: none; }
         .control-btn { background: rgba(255,255,255,0.3); border: 2px solid transparent; padding: 5px 8px; border-radius: 8px; font-family: 'Fredoka One', cursive; font-size: 11px; cursor: pointer; color: white; transition: all 0.3s; }
         .control-btn:hover { background: rgba(255,255,255,0.4); }
         .control-btn.active { background: linear-gradient(145deg, #ff9a9e, #fecfef); color: #c0392b; border-color: white; }
@@ -95,6 +96,32 @@
             outline: none;
             width: 90px;
             text-align: left;
+        }
+
+        .blocks-wrapper {
+            display: flex;
+            align-items: flex-end;
+        }
+        .blocks-wrapper.hidden { display: none; }
+
+        .number-labels {
+            display: flex;
+            flex-direction: column-reverse;
+            justify-content: flex-start;
+            height: calc(var(--block-size) * 10);
+            margin-right: 4px;
+        }
+        .number-labels.hidden { display: none; }
+        .number-label {
+            height: var(--block-size);
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            font-family: 'Nunito', sans-serif;
+            font-weight: 700;
+            font-size: calc(var(--block-size) * 0.45);
+            color: rgba(255,255,255,0.8);
+            padding-right: 2px;
         }
 
         .blocks-area {
@@ -232,7 +259,6 @@
             .num-btn { width: 40px; height: 40px; font-size: 18px; }
         }
         @media (max-width: 600px) {
-            .controls { flex-direction: column; gap: 4px; }
             .nav-hint { display: none; }
             :root { --block-size: 24px; }
         }
@@ -259,6 +285,11 @@
             <button class="control-btn active" data-blocks="true" onclick="setShowBlocks(true)">Show</button>
             <button class="control-btn" data-blocks="false" onclick="setShowBlocks(false)">Hide</button>
         </div>
+        <div class="control-panel" id="labelPanel">
+            <label>🏷️ Labels</label>
+            <button class="control-btn active" data-labels="true" onclick="setShowLabels(true)">Show</button>
+            <button class="control-btn" data-labels="false" onclick="setShowLabels(false)">Hide</button>
+        </div>
     </div>
 
     <div class="nav-hint">→ Answer/Next<br>← Back</div>
@@ -268,7 +299,21 @@
             <div class="equation-with-blocks">
                 <div class="number-column">
                     <div class="number-display" id="num1">2</div>
-                    <div class="blocks-area" id="blocks1"></div>
+                    <div class="blocks-wrapper" id="blocksWrapper1">
+                        <div class="number-labels" id="numberLabels">
+                            <div class="number-label">1</div>
+                            <div class="number-label">2</div>
+                            <div class="number-label">3</div>
+                            <div class="number-label">4</div>
+                            <div class="number-label">5</div>
+                            <div class="number-label">6</div>
+                            <div class="number-label">7</div>
+                            <div class="number-label">8</div>
+                            <div class="number-label">9</div>
+                            <div class="number-label">10</div>
+                        </div>
+                        <div class="blocks-area" id="blocks1"></div>
+                    </div>
                 </div>
                 <div class="operator">+</div>
                 <div class="number-column">
@@ -315,6 +360,7 @@
         let cachedVoices = [];
         let isAnimating = false;
         let showBlocks = true;
+        let showLabels = true;
 
         const chineseNumbers = { 0:'零',1:'一',2:'二',3:'三',4:'四',5:'五',6:'六',7:'七',8:'八',9:'九',10:'十' };
 
@@ -605,13 +651,25 @@
             showBlocks = show;
             document.querySelectorAll('[data-blocks]').forEach(btn => btn.classList.toggle('active', btn.dataset.blocks === String(show)));
             
-            // Show/hide all block areas
+            // Show/hide all block areas and wrapper
             document.querySelectorAll('.blocks-area').forEach(area => {
                 area.classList.toggle('hidden', !show);
             });
+            document.getElementById('blocksWrapper1').classList.toggle('hidden', !show);
             
             // Toggle alignment class on equation container
             document.querySelector('.equation-with-blocks').classList.toggle('no-blocks', !show);
+            
+            // Enable/disable labels panel based on blocks visibility
+            document.getElementById('labelPanel').classList.toggle('disabled', !show);
+            
+            // Show/hide number labels
+            document.getElementById('numberLabels').classList.toggle('hidden', !show || !showLabels);
+            
+            // When blocks are shown, enable labels by default
+            if (show && !showLabels) {
+                setShowLabels(true);
+            }
             
             // Regenerate current quiz to apply changes
             if (quizState === 'question') {
@@ -623,6 +681,14 @@
                     createAddendBlocks(document.getElementById('blocks2'), num2, num1, baseAddend === 2, '2');
                 }
             }
+        }
+
+        function setShowLabels(show) {
+            showLabels = show;
+            document.querySelectorAll('[data-labels]').forEach(btn => btn.classList.toggle('active', btn.dataset.labels === String(show)));
+            
+            // Show/hide number labels (only if blocks are also shown)
+            document.getElementById('numberLabels').classList.toggle('hidden', !show || !showBlocks);
         }
 
         function inputDigit(digit) {
