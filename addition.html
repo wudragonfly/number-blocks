@@ -101,10 +101,14 @@
         .blocks-wrapper {
             display: flex;
             align-items: flex-end;
+            position: relative;
         }
         .blocks-wrapper.hidden { display: none; }
 
         .number-labels {
+            position: absolute;
+            right: 100%;
+            bottom: 0;
             display: flex;
             flex-direction: column-reverse;
             justify-content: flex-start;
@@ -122,6 +126,7 @@
             font-size: calc(var(--block-size) * 0.45);
             color: rgba(255,255,255,0.8);
             padding-right: 2px;
+            width: 24px;
         }
 
         .blocks-area {
@@ -269,30 +274,30 @@
 
     <div class="controls">
         <div class="control-panel">
-            <label>🌐 Lang</label>
+            <label id="labelLang">🌐 语言</label>
             <button class="control-btn active" data-lang="chinese" onclick="setLanguage('chinese')">🇨🇳 中文</button>
             <button class="control-btn" data-lang="english" onclick="setLanguage('english')">🇺🇸 EN</button>
         </div>
         <div class="control-panel">
-            <label>🔢 Range</label>
+            <label id="labelRange">🔢 范围</label>
             <button class="control-btn active" data-range="5" onclick="setRange(5)">0~5</button>
             <button class="control-btn" data-range="10" onclick="setRange(10)">0~10</button>
             <button class="control-btn" data-range="20" onclick="setRange(20)">0~20</button>
             <button class="control-btn" data-range="100" onclick="setRange(100)">0~100</button>
         </div>
         <div class="control-panel">
-            <label>🧱 Blocks</label>
-            <button class="control-btn active" data-blocks="true" onclick="setShowBlocks(true)">Show</button>
-            <button class="control-btn" data-blocks="false" onclick="setShowBlocks(false)">Hide</button>
+            <label id="labelBlocks">🧱 方块</label>
+            <button class="control-btn active" data-blocks="true" onclick="setShowBlocks(true)" id="btnBlocksShow">显示</button>
+            <button class="control-btn" data-blocks="false" onclick="setShowBlocks(false)" id="btnBlocksHide">隐藏</button>
         </div>
         <div class="control-panel" id="labelPanel">
-            <label>🏷️ Labels</label>
-            <button class="control-btn active" data-labels="true" onclick="setShowLabels(true)">Show</button>
-            <button class="control-btn" data-labels="false" onclick="setShowLabels(false)">Hide</button>
+            <label id="labelLabels">🏷️ 标签</label>
+            <button class="control-btn active" data-labels="true" onclick="setShowLabels(true)" id="btnLabelsShow">显示</button>
+            <button class="control-btn" data-labels="false" onclick="setShowLabels(false)" id="btnLabelsHide">隐藏</button>
         </div>
     </div>
 
-    <div class="nav-hint">→ Answer/Next<br>← Back</div>
+    <div class="nav-hint" id="navHint">→ 答案/下一题<br>← 返回</div>
 
     <div class="main-container">
         <div class="quiz-area">
@@ -345,14 +350,14 @@
                 <button class="num-btn digit-0" onclick="inputDigit(0)">0</button>
             </div>
             <div class="action-buttons">
-                <button class="action-btn submit" onclick="checkAnswer()">✓ Check</button>
-                <button class="action-btn clear" onclick="clearAnswer()">✕ Clear</button>
-                <button class="action-btn next" onclick="nextQuiz()">→ Next</button>
+                <button class="action-btn submit" onclick="checkAnswer()" id="btnCheck">✓ 检查</button>
+                <button class="action-btn clear" onclick="clearAnswer()" id="btnClear">✕ 清除</button>
+                <button class="action-btn next" onclick="nextQuiz()" id="btnNext">→ 下一题</button>
             </div>
         </div>
     </div>
 
-    <a href="index.html" class="home-btn" title="Home">🏠</a>
+    <a href="index.html" class="home-btn" id="homeBtn" title="首页">🏠</a>
 
     <script>
         let num1 = 0, num2 = 0, correctAnswer = 0, currentAnswer = '';
@@ -615,9 +620,18 @@
             document.getElementById('blocks2').innerHTML = '';
             document.getElementById('blocksResult').innerHTML = '';
             
-            num1 = Math.floor(Math.random() * (maxRange + 1));
-            num2 = Math.floor(Math.random() * (maxRange + 1 - num1));
-            correctAnswer = num1 + num2;
+            // Determine minimum sum based on range
+            let minSum = 0;
+            if (maxRange === 10) minSum = 6;       // sum > 5
+            else if (maxRange === 20) minSum = 11; // sum > 10
+            else if (maxRange === 100) minSum = 21; // sum > 20
+            
+            // Generate numbers ensuring sum meets minimum
+            do {
+                num1 = Math.floor(Math.random() * (maxRange + 1));
+                num2 = Math.floor(Math.random() * (maxRange + 1 - num1));
+                correctAnswer = num1 + num2;
+            } while (correctAnswer < minSum);
             
             document.getElementById('num1').textContent = num1;
             document.getElementById('num2').textContent = num2;
@@ -638,6 +652,56 @@
         function setLanguage(lang) {
             language = lang;
             document.querySelectorAll('[data-lang]').forEach(btn => btn.classList.toggle('active', btn.dataset.lang === lang));
+            
+            // Translate UI elements
+            const translations = {
+                chinese: {
+                    labelLang: '🌐 语言',
+                    labelRange: '🔢 范围',
+                    labelBlocks: '🧱 方块',
+                    labelLabels: '🏷️ 标签',
+                    btnBlocksShow: '显示',
+                    btnBlocksHide: '隐藏',
+                    btnLabelsShow: '显示',
+                    btnLabelsHide: '隐藏',
+                    btnCheck: '✓ 检查',
+                    btnClear: '✕ 清除',
+                    btnNext: '→ 下一题',
+                    navHint: '→ 答案/下一题<br>← 返回',
+                    homeTitle: '首页'
+                },
+                english: {
+                    labelLang: '🌐 Lang',
+                    labelRange: '🔢 Range',
+                    labelBlocks: '🧱 Blocks',
+                    labelLabels: '🏷️ Labels',
+                    btnBlocksShow: 'Show',
+                    btnBlocksHide: 'Hide',
+                    btnLabelsShow: 'Show',
+                    btnLabelsHide: 'Hide',
+                    btnCheck: '✓ Check',
+                    btnClear: '✕ Clear',
+                    btnNext: '→ Next',
+                    navHint: '→ Answer/Next<br>← Back',
+                    homeTitle: 'Home'
+                }
+            };
+            
+            const t = translations[lang];
+            document.getElementById('labelLang').textContent = t.labelLang;
+            document.getElementById('labelRange').textContent = t.labelRange;
+            document.getElementById('labelBlocks').textContent = t.labelBlocks;
+            document.getElementById('labelLabels').textContent = t.labelLabels;
+            document.getElementById('btnBlocksShow').textContent = t.btnBlocksShow;
+            document.getElementById('btnBlocksHide').textContent = t.btnBlocksHide;
+            document.getElementById('btnLabelsShow').textContent = t.btnLabelsShow;
+            document.getElementById('btnLabelsHide').textContent = t.btnLabelsHide;
+            document.getElementById('btnCheck').textContent = t.btnCheck;
+            document.getElementById('btnClear').textContent = t.btnClear;
+            document.getElementById('btnNext').textContent = t.btnNext;
+            document.getElementById('navHint').innerHTML = t.navHint;
+            document.getElementById('homeBtn').title = t.homeTitle;
+            
             if (quizState === 'question') speakQuestion();
         }
 
@@ -881,7 +945,10 @@
         });
 
         createBubbles();
-        loadVoices().then(() => setRange(maxRange)); // Initialize with current range to set CSS variables
+        loadVoices().then(() => {
+            setLanguage(language); // Initialize UI language
+            setRange(maxRange);
+        });
     </script>
 </body>
 </html>
