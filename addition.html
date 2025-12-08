@@ -39,6 +39,7 @@
         .quiz-area { background: rgba(255,255,255,0.15); border-radius: 20px; padding: 15px 10px; backdrop-filter: blur(10px); display: flex; flex-direction: column; align-items: center; gap: 10px; width: 100%; overflow-x: auto; }
 
         .equation-with-blocks { display: flex; align-items: flex-start; justify-content: center; gap: 8px; flex-wrap: nowrap; }
+        .equation-with-blocks.no-blocks { align-items: center; }
 
         .number-column { display: flex; flex-direction: column; align-items: flex-start; gap: 5px; }
         .number-column.result { min-width: 90px; }
@@ -102,6 +103,10 @@
             justify-content: flex-start;
             height: calc(var(--block-size) * 10);
             gap: 2px;
+        }
+        .blocks-area.hidden {
+            display: none !important;
+            height: 0 !important;
         }
 
         .block-column {
@@ -249,6 +254,11 @@
             <button class="control-btn" data-range="20" onclick="setRange(20)">0~20</button>
             <button class="control-btn" data-range="100" onclick="setRange(100)">0~100</button>
         </div>
+        <div class="control-panel">
+            <label>🧱 Blocks</label>
+            <button class="control-btn active" data-blocks="true" onclick="setShowBlocks(true)">Show</button>
+            <button class="control-btn" data-blocks="false" onclick="setShowBlocks(false)">Hide</button>
+        </div>
     </div>
 
     <div class="nav-hint">→ Answer/Next<br>← Back</div>
@@ -304,6 +314,7 @@
         let language = 'chinese', maxRange = 5, quizState = 'question';
         let cachedVoices = [];
         let isAnimating = false;
+        let showBlocks = true;
 
         const chineseNumbers = { 0:'零',1:'一',2:'二',3:'三',4:'四',5:'五',6:'六',7:'七',8:'八',9:'九',10:'十' };
 
@@ -569,9 +580,11 @@
             document.getElementById('feedback').textContent = '';
             document.getElementById('feedback').className = 'feedback';
             
-            const baseAddend = getBaseAddend(num1, num2);
-            createAddendBlocks(document.getElementById('blocks1'), num1, num2, baseAddend === 1, '1');
-            createAddendBlocks(document.getElementById('blocks2'), num2, num1, baseAddend === 2, '2');
+            if (showBlocks) {
+                const baseAddend = getBaseAddend(num1, num2);
+                createAddendBlocks(document.getElementById('blocks1'), num1, num2, baseAddend === 1, '1');
+                createAddendBlocks(document.getElementById('blocks2'), num2, num1, baseAddend === 2, '2');
+            }
             
             setTimeout(() => speakQuestion(), 300);
         }
@@ -586,6 +599,30 @@
             maxRange = range;
             document.querySelectorAll('[data-range]').forEach(btn => btn.classList.toggle('active', parseInt(btn.dataset.range) === range));
             generateQuiz();
+        }
+
+        function setShowBlocks(show) {
+            showBlocks = show;
+            document.querySelectorAll('[data-blocks]').forEach(btn => btn.classList.toggle('active', btn.dataset.blocks === String(show)));
+            
+            // Show/hide all block areas
+            document.querySelectorAll('.blocks-area').forEach(area => {
+                area.classList.toggle('hidden', !show);
+            });
+            
+            // Toggle alignment class on equation container
+            document.querySelector('.equation-with-blocks').classList.toggle('no-blocks', !show);
+            
+            // Regenerate current quiz to apply changes
+            if (quizState === 'question') {
+                document.getElementById('blocks1').innerHTML = '';
+                document.getElementById('blocks2').innerHTML = '';
+                if (show) {
+                    const baseAddend = getBaseAddend(num1, num2);
+                    createAddendBlocks(document.getElementById('blocks1'), num1, num2, baseAddend === 1, '1');
+                    createAddendBlocks(document.getElementById('blocks2'), num2, num1, baseAddend === 2, '2');
+                }
+            }
         }
 
         function inputDigit(digit) {
@@ -707,10 +744,12 @@
                 feedback.textContent = language === 'chinese' ? '🎉 正确！' : '🎉 Correct!';
                 feedback.className = 'feedback correct';
                 quizState = 'answered';
-                isAnimating = true;
-                animateBlocksMerge();
-                setTimeout(() => speakAnswer(), 500);
-                setTimeout(() => { isAnimating = false; }, 600);
+                if (showBlocks) {
+                    isAnimating = true;
+                    animateBlocksMerge();
+                    setTimeout(() => { isAnimating = false; }, 600);
+                }
+                setTimeout(() => speakAnswer(), showBlocks ? 500 : 100);
             } else {
                 answerBox.className = 'answer-box wrong';
                 feedback.textContent = language === 'chinese' ? '❌ 再试一次' : '❌ Try again';
@@ -727,10 +766,12 @@
             document.getElementById('answerBox').className = 'answer-box correct';
             document.getElementById('feedback').textContent = '';
             quizState = 'showing-result';
-            isAnimating = true;
-            animateBlocksMerge();
+            if (showBlocks) {
+                isAnimating = true;
+                animateBlocksMerge();
+                setTimeout(() => { isAnimating = false; }, 600);
+            }
             speakAnswer();
-            setTimeout(() => { isAnimating = false; }, 600);
         }
 
         function nextQuiz() { generateQuiz(); }
@@ -752,9 +793,11 @@
             document.getElementById('feedback').className = 'feedback';
             
             // Recreate addend blocks (removes ghosts and resets transforms)
-            const baseAddend = getBaseAddend(num1, num2);
-            createAddendBlocks(document.getElementById('blocks1'), num1, num2, baseAddend === 1, '1');
-            createAddendBlocks(document.getElementById('blocks2'), num2, num1, baseAddend === 2, '2');
+            if (showBlocks) {
+                const baseAddend = getBaseAddend(num1, num2);
+                createAddendBlocks(document.getElementById('blocks1'), num1, num2, baseAddend === 1, '1');
+                createAddendBlocks(document.getElementById('blocks2'), num2, num1, baseAddend === 2, '2');
+            }
         }
 
         document.addEventListener('keydown', e => {
