@@ -1,0 +1,946 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Number Blocks 1-100</title>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@700;900&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --block-size: 50px;
+        }
+
+        body {
+            min-height: 100vh;
+            font-family: 'Fredoka One', cursive;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+            position: relative;
+        }
+
+        /* Animated background bubbles */
+        .bubbles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            overflow: hidden;
+            z-index: 0;
+        }
+
+        .bubble {
+            position: absolute;
+            bottom: -100px;
+            border-radius: 50%;
+            opacity: 0.6;
+            animation: float-up 8s infinite ease-in;
+        }
+
+        @keyframes float-up {
+            0% {
+                transform: translateY(0) rotate(0deg);
+                opacity: 0.6;
+            }
+            100% {
+                transform: translateY(-110vh) rotate(720deg);
+                opacity: 0;
+            }
+        }
+
+        .container {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            padding: 20px;
+        }
+
+        .number-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .number-display {
+            font-size: clamp(60px, 12vw, 140px);
+            color: white;
+            text-shadow: 
+                3px 3px 0 #ff6b6b,
+                6px 6px 0 rgba(0,0,0,0.2);
+            animation: bounce-in 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            font-family: 'Nunito', sans-serif;
+            font-weight: 900;
+            line-height: 1;
+        }
+
+        .number-text {
+            font-size: clamp(24px, 5vw, 48px);
+            color: white;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            animation: fade-in 0.5s ease-out 0.3s backwards;
+            text-align: center;
+        }
+
+        @keyframes fade-in {
+            0% {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes bounce-in {
+            0% {
+                transform: scale(0);
+                opacity: 0;
+            }
+            50% {
+                transform: scale(1.2);
+            }
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        .blocks-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: flex-end;
+            gap: 8px;
+            max-width: 85vw;
+            min-height: 200px;
+            padding: 20px;
+            background: rgba(255,255,255,0.15);
+            border-radius: 30px;
+            backdrop-filter: blur(10px);
+        }
+
+        .block-group {
+            display: flex;
+            flex-direction: column-reverse;
+            align-items: center;
+        }
+
+        .column-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .column-top-label {
+            font-size: 20px;
+            color: white;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+            font-family: 'Nunito', sans-serif;
+            font-weight: 700;
+            padding: 5px 0;
+            min-height: 30px;
+        }
+
+        .blocks-with-labels {
+            display: flex;
+            align-items: flex-end;
+            gap: 5px;
+        }
+
+        .number-labels {
+            display: flex;
+            flex-direction: column-reverse;
+            justify-content: flex-start;
+        }
+
+        .number-label {
+            height: var(--block-size);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: calc(var(--block-size) * 0.4);
+            color: white;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+            font-family: 'Nunito', sans-serif;
+            font-weight: 700;
+            min-width: 25px;
+        }
+
+        .number-labels.left {
+            text-align: right;
+            padding-right: 5px;
+        }
+
+        .number-labels.right {
+            text-align: left;
+            padding-left: 5px;
+        }
+
+        .block {
+            width: var(--block-size);
+            height: var(--block-size);
+            border-radius: 8px;
+            position: relative;
+            box-shadow: 
+                inset -3px -3px 0 rgba(0,0,0,0.2),
+                inset 3px 3px 0 rgba(255,255,255,0.3),
+                3px 3px 8px rgba(0,0,0,0.3);
+            animation: pop-in 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55) backwards;
+            transition: transform 0.2s;
+        }
+
+        .block:hover {
+            transform: scale(1.1) rotate(5deg);
+        }
+
+        .block.has-face::before {
+            content: '';
+            position: absolute;
+            top: 25%;
+            left: 20%;
+            width: 18%;
+            height: 18%;
+            background: white;
+            border-radius: 50%;
+            box-shadow: 
+                calc(var(--block-size) * 0.4) 0 0 white;
+        }
+
+        .block.has-face::after {
+            content: '';
+            position: absolute;
+            top: 30%;
+            left: 25%;
+            width: 8%;
+            height: 8%;
+            background: #333;
+            border-radius: 50%;
+            box-shadow: 
+                calc(var(--block-size) * 0.4) 0 0 #333;
+        }
+
+        .block .mouth {
+            position: absolute;
+            bottom: 20%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 40%;
+            height: 20%;
+            background: #c0392b;
+            border-radius: 0 0 50% 50%;
+            overflow: hidden;
+        }
+
+        .block .mouth::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60%;
+            height: 40%;
+            background: #e74c3c;
+            border-radius: 50% 50% 0 0;
+        }
+
+        @keyframes pop-in {
+            0% {
+                transform: scale(0) rotate(-180deg);
+                opacity: 0;
+            }
+            100% {
+                transform: scale(1) rotate(0deg);
+                opacity: 1;
+            }
+        }
+
+        .navigation {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            display: flex;
+            gap: 15px;
+            z-index: 10;
+        }
+
+        .nav-btn {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            border: none;
+            font-size: 32px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+            font-family: 'Fredoka One', cursive;
+        }
+
+        .nav-btn.prev {
+            background: linear-gradient(145deg, #ff9a9e, #fad0c4);
+            color: #c0392b;
+        }
+
+        .nav-btn.next {
+            background: linear-gradient(145deg, #a8edea, #fed6e3);
+            color: #16a085;
+        }
+
+        .nav-btn:hover {
+            transform: scale(1.15);
+        }
+
+        .home-btn {
+            position: fixed;
+            bottom: 30px;
+            left: 30px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            border: none;
+            font-size: 28px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(145deg, #667eea, #764ba2);
+            color: white;
+            text-decoration: none;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+            transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            z-index: 10;
+        }
+
+        .home-btn:hover {
+            transform: scale(1.15);
+        }
+
+        .nav-btn:active {
+            transform: scale(0.95);
+        }
+
+        .nav-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            transform: scale(1);
+        }
+
+        .nav-hint {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(255,255,255,0.2);
+            padding: 10px 20px;
+            border-radius: 20px;
+            color: white;
+            font-size: 14px;
+            backdrop-filter: blur(5px);
+        }
+
+        .progress {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 6px;
+            background: linear-gradient(90deg, #f093fb, #f5576c, #ffd89b);
+            transition: width 0.3s ease;
+            border-radius: 0 3px 3px 0;
+        }
+
+        /* Number block colors based on Numberblocks show */
+        .color-1 { background: linear-gradient(145deg, #e74c3c, #c0392b); }
+        .color-2 { background: linear-gradient(145deg, #e67e22, #d35400); }
+        .color-3 { background: linear-gradient(145deg, #f1c40f, #f39c12); }
+        .color-4 { background: linear-gradient(145deg, #2ecc71, #27ae60); }
+        .color-5 { background: linear-gradient(145deg, #3498db, #2980b9); }
+        .color-6 { background: linear-gradient(145deg, #9b59b6, #8e44ad); }
+        .color-7 { background: linear-gradient(145deg, #1abc9c, #16a085); }
+        .color-8 { background: linear-gradient(145deg, #e91e63, #c2185b); }
+        .color-9 { background: linear-gradient(145deg, #00bcd4, #0097a7); }
+        .color-10 { background: linear-gradient(145deg, #ffeb3b, #ffc107); }
+
+        .controls {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 10;
+        }
+
+        .language-selector {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            background: rgba(255,255,255,0.2);
+            padding: 15px;
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+        }
+
+        .language-selector label {
+            color: white;
+            font-size: 12px;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .language-btn {
+            background: rgba(255,255,255,0.3);
+            border: 2px solid transparent;
+            padding: 10px 15px;
+            border-radius: 15px;
+            font-family: 'Fredoka One', cursive;
+            font-size: 14px;
+            cursor: pointer;
+            color: white;
+            transition: all 0.3s;
+            text-align: left;
+        }
+
+        .language-btn:hover {
+            background: rgba(255,255,255,0.4);
+        }
+
+        .language-btn.active {
+            background: linear-gradient(145deg, #ff9a9e, #fecfef);
+            color: #c0392b;
+            border-color: white;
+        }
+
+        .say-number {
+            background: linear-gradient(145deg, #ff9a9e, #fecfef);
+            border: none;
+            padding: 15px 25px;
+            border-radius: 30px;
+            font-family: 'Fredoka One', cursive;
+            font-size: 18px;
+            cursor: pointer;
+            color: #c0392b;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            transition: all 0.3s;
+        }
+
+        .say-number:hover {
+            transform: scale(1.1);
+        }
+
+        @media (max-width: 768px) {
+            .nav-btn {
+                width: 55px;
+                height: 55px;
+                font-size: 24px;
+            }
+            .blocks-container {
+                padding: 15px;
+                gap: 5px;
+                max-width: 95vw;
+                overflow-x: auto;
+            }
+            .controls {
+                top: 10px;
+                left: 10px;
+            }
+            .language-selector {
+                padding: 10px;
+            }
+            .language-btn {
+                padding: 8px 12px;
+                font-size: 12px;
+            }
+            .say-number {
+                padding: 10px 18px;
+                font-size: 14px;
+            }
+            .number-text {
+                font-size: clamp(18px, 4vw, 32px);
+            }
+            .number-label {
+                min-width: 20px;
+                font-size: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="progress" id="progress"></div>
+    
+    <div class="bubbles" id="bubbles"></div>
+
+    <div class="controls">
+        <div class="language-selector">
+            <label>🌐 Language</label>
+            <button class="language-btn" data-mode="chinese" onclick="setLanguageMode('chinese')">🇨🇳 中文</button>
+            <button class="language-btn" data-mode="english" onclick="setLanguageMode('english')">🇺🇸 English</button>
+            <button class="language-btn active" data-mode="both" onclick="setLanguageMode('both')">🇨🇳🇺🇸 Both</button>
+        </div>
+        <button class="say-number" onclick="sayNumber()">🔊 Say It!</button>
+    </div>
+    
+    <div class="nav-hint">← → Arrow Keys</div>
+
+    <div class="container">
+        <div class="number-section">
+            <div class="number-display" id="numberDisplay">1</div>
+            <div class="number-text" id="numberText"></div>
+        </div>
+        <div class="blocks-container" id="blocksContainer"></div>
+    </div>
+
+    <div class="navigation">
+        <button class="nav-btn prev" id="prevBtn" onclick="goToPrev()">◀</button>
+        <button class="nav-btn next" id="nextBtn" onclick="goToNext()">▶</button>
+    </div>
+
+    <a href="index.html" class="home-btn" title="Back to Home">🏠</a>
+
+    <script>
+        let currentNumber = 1;
+        const MIN = 1;
+        const MAX = 100;
+        let languageMode = 'both'; // 'chinese', 'english', or 'both'
+
+        // Chinese number words
+        const chineseNumbers = {
+            0: '零', 1: '一', 2: '二', 3: '三', 4: '四',
+            5: '五', 6: '六', 7: '七', 8: '八', 9: '九',
+            10: '十'
+        };
+
+        // English number words
+        const englishOnes = ['', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine'];
+        const englishTeens = ['ten', 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen'];
+        const englishTens = ['', '', 'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety'];
+
+        function getChineseNumber(num) {
+            if (num <= 10) return chineseNumbers[num];
+            if (num < 20) return '十' + (num % 10 === 0 ? '' : chineseNumbers[num % 10]);
+            if (num < 100) {
+                const tens = Math.floor(num / 10);
+                const ones = num % 10;
+                return chineseNumbers[tens] + '十' + (ones === 0 ? '' : chineseNumbers[ones]);
+            }
+            return '一百';
+        }
+
+        function getEnglishNumber(num) {
+            if (num === 100) return 'one hundred';
+            if (num < 10) return englishOnes[num];
+            if (num < 20) return englishTeens[num - 10];
+            const tens = Math.floor(num / 10);
+            const ones = num % 10;
+            return englishTens[tens] + (ones > 0 ? '-' + englishOnes[ones] : '');
+        }
+
+        function getNumberText(num) {
+            const chinese = getChineseNumber(num);
+            const english = getEnglishNumber(num);
+            
+            if (languageMode === 'chinese') return chinese;
+            if (languageMode === 'english') return english;
+            return `${chinese} · ${english}`;
+        }
+
+        function setLanguageMode(mode) {
+            languageMode = mode;
+            
+            // Update button styles
+            document.querySelectorAll('.language-btn').forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.dataset.mode === mode) {
+                    btn.classList.add('active');
+                }
+            });
+            
+            // Update display
+            updateNumberText();
+        }
+
+        function updateNumberText() {
+            const textEl = document.getElementById('numberText');
+            textEl.style.animation = 'none';
+            textEl.offsetHeight;
+            textEl.style.animation = 'fade-in 0.5s ease-out backwards';
+            textEl.textContent = getNumberText(currentNumber);
+        }
+
+        // Create floating bubbles
+        function createBubbles() {
+            const bubblesContainer = document.getElementById('bubbles');
+            const colors = ['#ff6b6b', '#feca57', '#48dbfb', '#ff9ff3', '#54a0ff', '#5f27cd', '#00d2d3', '#ff9f43'];
+            
+            for (let i = 0; i < 15; i++) {
+                const bubble = document.createElement('div');
+                bubble.className = 'bubble';
+                bubble.style.left = Math.random() * 100 + '%';
+                bubble.style.width = (Math.random() * 40 + 20) + 'px';
+                bubble.style.height = bubble.style.width;
+                bubble.style.background = colors[Math.floor(Math.random() * colors.length)];
+                bubble.style.animationDelay = Math.random() * 8 + 's';
+                bubble.style.animationDuration = (Math.random() * 4 + 6) + 's';
+                bubblesContainer.appendChild(bubble);
+            }
+        }
+
+        function getColorClass(index) {
+            return 'color-' + ((index % 10) + 1);
+        }
+
+        function createNumberLabels(count, side) {
+            const labelsDiv = document.createElement('div');
+            labelsDiv.className = `number-labels ${side}`;
+            
+            for (let i = 1; i <= count; i++) {
+                const label = document.createElement('div');
+                label.className = 'number-label';
+                label.textContent = i;
+                labelsDiv.appendChild(label);
+            }
+            
+            return labelsDiv;
+        }
+
+        function renderBlocks(num) {
+            const container = document.getElementById('blocksContainer');
+            container.innerHTML = '';
+
+            // Keep block size constant
+            document.documentElement.style.setProperty('--block-size', '50px');
+
+            let blockIndex = 0;
+
+            if (num < 10) {
+                // For numbers 1-9: single column with right labels
+                const wrapper = document.createElement('div');
+                wrapper.className = 'blocks-with-labels';
+                
+                const group = document.createElement('div');
+                group.className = 'block-group';
+                
+                for (let row = 0; row < num; row++) {
+                    const block = document.createElement('div');
+                    block.className = `block ${getColorClass(row)}`;
+                    
+                    if (row === num - 1) {
+                        block.classList.add('has-face');
+                        const mouth = document.createElement('div');
+                        mouth.className = 'mouth';
+                        block.appendChild(mouth);
+                    }
+                    
+                    const delay = row * 0.05;
+                    block.style.animationDelay = delay + 's';
+                    group.appendChild(block);
+                    blockIndex++;
+                }
+                
+                wrapper.appendChild(group);
+                wrapper.appendChild(createNumberLabels(num, 'right'));
+                container.appendChild(wrapper);
+            } else {
+                // For numbers >= 10: add left labels (1-10), columns with top labels, and right labels
+                const fullColumns = Math.floor(num / 10);
+                const remainder = num % 10;
+                const totalColumns = remainder > 0 ? fullColumns + 1 : fullColumns;
+
+                // Left labels (1-10)
+                container.appendChild(createNumberLabels(10, 'left'));
+
+                // Animation timing:
+                // - If multiple of 10: all columns animate together
+                // - Otherwise: Columns 1 to n-1 animate together, last column animates after
+                const isMultipleOfTen = remainder === 0;
+                const baseDelayForLastColumn = 0.4;
+
+                for (let col = 0; col < totalColumns; col++) {
+                    const isLastColumn = col === totalColumns - 1;
+                    const blocksInColumn = (isLastColumn && remainder > 0) ? remainder : 10;
+                    const isFullColumn = blocksInColumn === 10;
+                    
+                    // Wrapper for column (includes top label if full column)
+                    const columnWrapper = document.createElement('div');
+                    columnWrapper.className = 'column-wrapper';
+                    
+                    // Add column number (1, 2, 3...) on top of full columns
+                    const topLabel = document.createElement('div');
+                    topLabel.className = 'column-top-label';
+                    topLabel.textContent = isFullColumn ? (col + 1) : '';
+                    columnWrapper.appendChild(topLabel);
+                    
+                    const group = document.createElement('div');
+                    group.className = 'block-group';
+                    
+                    for (let row = 0; row < blocksInColumn; row++) {
+                        const block = document.createElement('div');
+                        block.className = `block ${getColorClass(row)}`;
+                        
+                        if (row === blocksInColumn - 1) {
+                            block.classList.add('has-face');
+                            const mouth = document.createElement('div');
+                            mouth.className = 'mouth';
+                            block.appendChild(mouth);
+                        }
+                        
+                        // If multiple of 10: all columns animate together
+                        // Otherwise: last column animates after others
+                        let delay;
+                        if (isMultipleOfTen) {
+                            delay = row * 0.03;
+                        } else if (isLastColumn && totalColumns > 1) {
+                            delay = baseDelayForLastColumn + (row * 0.03);
+                        } else {
+                            delay = row * 0.03;
+                        }
+                        block.style.animationDelay = delay + 's';
+                        
+                        group.appendChild(block);
+                        blockIndex++;
+                    }
+                    
+                    columnWrapper.appendChild(group);
+                    container.appendChild(columnWrapper);
+                }
+
+                // Right labels (match the last column's block count)
+                const lastColumnBlocks = remainder > 0 ? remainder : 10;
+                container.appendChild(createNumberLabels(lastColumnBlocks, 'right'));
+            }
+        }
+
+        function updateDisplay(autoSpeak = true) {
+            const display = document.getElementById('numberDisplay');
+            display.style.animation = 'none';
+            display.offsetHeight;
+            display.style.animation = 'bounce-in 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55)';
+            display.textContent = currentNumber;
+
+            updateNumberText();
+            renderBlocks(currentNumber);
+            updateProgress();
+            updateButtons();
+
+            // Auto-speak after short delay
+            if (autoSpeak) {
+                setTimeout(() => {
+                    sayNumber();
+                }, 200);
+            }
+        }
+
+        function updateProgress() {
+            const progress = document.getElementById('progress');
+            const percent = ((currentNumber - MIN) / (MAX - MIN)) * 100;
+            progress.style.width = percent + '%';
+        }
+
+        function updateButtons() {
+            document.getElementById('prevBtn').disabled = currentNumber <= MIN;
+            document.getElementById('nextBtn').disabled = currentNumber >= MAX;
+        }
+
+        function goToPrev() {
+            if (currentNumber > MIN) {
+                currentNumber--;
+                updateDisplay();
+            }
+        }
+
+        function goToNext() {
+            if (currentNumber < MAX) {
+                currentNumber++;
+                updateDisplay();
+            }
+        }
+
+        // Store voices globally once loaded
+        let cachedVoices = [];
+        let voicesLoaded = false;
+
+        function loadVoices() {
+            return new Promise((resolve) => {
+                cachedVoices = speechSynthesis.getVoices();
+                if (cachedVoices.length > 0) {
+                    voicesLoaded = true;
+                    resolve(cachedVoices);
+                    return;
+                }
+                
+                // Wait for voices to load
+                const onVoicesChanged = () => {
+                    cachedVoices = speechSynthesis.getVoices();
+                    if (cachedVoices.length > 0) {
+                        voicesLoaded = true;
+                        resolve(cachedVoices);
+                    }
+                };
+                
+                speechSynthesis.onvoiceschanged = onVoicesChanged;
+                
+                // Fallback timeout in case voices never load
+                setTimeout(() => {
+                    if (!voicesLoaded) {
+                        cachedVoices = speechSynthesis.getVoices();
+                        voicesLoaded = true;
+                        resolve(cachedVoices);
+                    }
+                }, 1000);
+            });
+        }
+
+        function getVoices() {
+            if (cachedVoices.length === 0) {
+                cachedVoices = speechSynthesis.getVoices();
+            }
+            return cachedVoices;
+        }
+
+        function findChineseVoice() {
+            const voices = getVoices();
+            return voices.find(v => v.lang.startsWith('zh-CN')) ||
+                   voices.find(v => v.lang.startsWith('zh')) ||
+                   voices.find(v => v.lang.includes('Chinese'));
+        }
+
+        function findEnglishVoice() {
+            const voices = getVoices();
+            return voices.find(v => v.lang === 'en-US') ||
+                   voices.find(v => v.lang.startsWith('en')) ||
+                   voices.find(v => v.lang.includes('English'));
+        }
+
+        // Chrome has a bug where speech synthesis stops working
+        // This workaround keeps it alive
+        function keepSpeechAlive() {
+            if (speechSynthesis.speaking) {
+                speechSynthesis.pause();
+                speechSynthesis.resume();
+            }
+        }
+
+        // Start the keep-alive interval (every 10 seconds)
+        setInterval(keepSpeechAlive, 10000);
+
+        function speakText(text, lang, voice) {
+            return new Promise((resolve, reject) => {
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.rate = 0.8;
+                utterance.pitch = lang === 'zh-CN' ? 1.1 : 1.2;
+                utterance.lang = lang;
+                
+                if (voice) {
+                    utterance.voice = voice;
+                }
+
+                utterance.onend = () => resolve();
+                utterance.onerror = (e) => {
+                    console.warn('Speech error:', e);
+                    resolve(); // Resolve anyway to continue
+                };
+
+                // Small delay before speaking to ensure clean state
+                setTimeout(() => {
+                    speechSynthesis.speak(utterance);
+                }, 50);
+            });
+        }
+
+        async function sayNumber() {
+            if (!('speechSynthesis' in window)) return;
+
+            // Cancel any ongoing speech and wait a bit
+            speechSynthesis.cancel();
+            await new Promise(r => setTimeout(r, 100));
+
+            // Resume in case it was paused (Chrome bug workaround)
+            speechSynthesis.resume();
+
+            const chineseVoice = findChineseVoice();
+            const englishVoice = findEnglishVoice();
+
+            try {
+                if (languageMode === 'chinese') {
+                    const chineseText = getChineseNumber(currentNumber);
+                    await speakText(chineseText, 'zh-CN', chineseVoice);
+                } else if (languageMode === 'english') {
+                    await speakText(currentNumber.toString(), 'en-US', englishVoice);
+                } else {
+                    // Both: Chinese first, then English
+                    const chineseText = getChineseNumber(currentNumber);
+                    await speakText(chineseText, 'zh-CN', chineseVoice);
+                    await new Promise(r => setTimeout(r, 300));
+                    await speakText(currentNumber.toString(), 'en-US', englishVoice);
+                }
+            } catch (e) {
+                console.warn('Speech failed:', e);
+            }
+        }
+
+        // Keyboard navigation
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft') {
+                goToPrev();
+            } else if (e.key === 'ArrowRight') {
+                goToNext();
+            } else if (e.key === ' ') {
+                e.preventDefault();
+                sayNumber();
+            }
+        });
+
+        // Touch swipe support
+        let touchStartX = 0;
+        document.addEventListener('touchstart', (e) => {
+            touchStartX = e.touches[0].clientX;
+        });
+
+        document.addEventListener('touchend', (e) => {
+            const touchEndX = e.changedTouches[0].clientX;
+            const diff = touchStartX - touchEndX;
+            
+            if (Math.abs(diff) > 50) {
+                if (diff > 0) {
+                    goToNext();
+                } else {
+                    goToPrev();
+                }
+            }
+        });
+
+        // Initialize
+        createBubbles();
+        
+        // Load voices first, then start
+        if ('speechSynthesis' in window) {
+            loadVoices().then(() => {
+                console.log('Voices loaded:', cachedVoices.length);
+                setTimeout(() => {
+                    updateDisplay(true);
+                }, 300);
+            });
+        } else {
+            updateDisplay(false);
+        }
+    </script>
+</body>
+</html>

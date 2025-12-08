@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Number Blocks - Addition</title>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@700;900&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root { --block-size: 32px; }
+        html, body { height: 100%; overflow: hidden; }
+
+        body {
+            font-family: 'Fredoka One', cursive;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+        }
+
+        .bubbles { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; overflow: hidden; z-index: 0; }
+        .bubble { position: absolute; bottom: -100px; border-radius: 50%; opacity: 0.6; animation: float-up 8s infinite ease-in; }
+        @keyframes float-up {
+            0% { transform: translateY(0) rotate(0deg); opacity: 0.6; }
+            100% { transform: translateY(-110vh) rotate(720deg); opacity: 0; }
+        }
+
+        .controls { position: fixed; top: 10px; left: 10px; display: flex; gap: 6px; z-index: 10; }
+        .control-panel { display: flex; flex-direction: column; gap: 3px; background: rgba(255,255,255,0.2); padding: 8px; border-radius: 10px; backdrop-filter: blur(10px); }
+        .control-panel label { color: white; font-size: 9px; text-transform: uppercase; letter-spacing: 1px; }
+        .control-btn { background: rgba(255,255,255,0.3); border: 2px solid transparent; padding: 5px 8px; border-radius: 8px; font-family: 'Fredoka One', cursive; font-size: 11px; cursor: pointer; color: white; transition: all 0.3s; }
+        .control-btn:hover { background: rgba(255,255,255,0.4); }
+        .control-btn.active { background: linear-gradient(145deg, #ff9a9e, #fecfef); color: #c0392b; border-color: white; }
+
+        .nav-hint { position: fixed; top: 10px; right: 10px; background: rgba(255,255,255,0.2); padding: 6px 10px; border-radius: 10px; color: white; font-size: 10px; backdrop-filter: blur(5px); line-height: 1.4; }
+
+        .main-container { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; gap: 10px; width: 100%; max-width: 900px; padding: 10px; }
+
+        .quiz-area { background: rgba(255,255,255,0.15); border-radius: 20px; padding: 15px 20px; backdrop-filter: blur(10px); display: flex; flex-direction: column; align-items: center; gap: 10px; width: 100%; }
+
+        .equation-with-blocks { display: flex; align-items: flex-start; justify-content: center; gap: 10px; }
+
+        .number-column { display: flex; flex-direction: column; align-items: center; gap: 5px; }
+
+        .number-display {
+            font-size: clamp(32px, 6vw, 48px);
+            color: white;
+            text-shadow: 2px 2px 0 #ff6b6b, 3px 3px 0 rgba(0,0,0,0.2);
+            font-family: 'Nunito', sans-serif;
+            font-weight: 900;
+            min-width: 50px;
+            text-align: center;
+            height: 50px;
+            line-height: 50px;
+        }
+
+        .operator {
+            font-size: clamp(28px, 5vw, 40px);
+            color: white;
+            text-shadow: 2px 2px 0 rgba(0,0,0,0.2);
+            height: 50px;
+            line-height: 50px;
+        }
+
+        .answer-box {
+            min-width: 60px;
+            padding: 0 10px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 10px;
+            border: 3px dashed rgba(255,255,255,0.5);
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .answer-box.correct { border: 3px solid #2ecc71; background: rgba(46, 204, 113, 0.3); }
+        .answer-box.wrong { border: 3px solid #e74c3c; background: rgba(231, 76, 60, 0.3); animation: shake 0.5s; }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-8px); }
+            40%, 80% { transform: translateX(8px); }
+        }
+
+        .answer-input {
+            font-size: clamp(32px, 6vw, 48px);
+            color: white;
+            text-shadow: 2px 2px 0 #2ecc71, 3px 3px 0 rgba(0,0,0,0.2);
+            font-family: 'Nunito', sans-serif;
+            font-weight: 900;
+            background: transparent;
+            border: none;
+            outline: none;
+            width: 70px;
+            text-align: center;
+        }
+
+        .blocks-area {
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            height: calc(var(--block-size) * 10);
+            gap: 3px;
+        }
+
+        .block-column {
+            display: flex;
+            flex-direction: column-reverse;
+            width: var(--block-size);
+            height: calc(var(--block-size) * 10);
+            position: relative;
+        }
+
+        .block {
+            width: var(--block-size);
+            height: var(--block-size);
+            border-radius: 4px;
+            position: absolute;
+            left: 0;
+            box-shadow: inset -2px -2px 0 rgba(0,0,0,0.2), inset 2px 2px 0 rgba(255,255,255,0.3), 2px 2px 5px rgba(0,0,0,0.3);
+            transition: transform 0.5s ease-out;
+            z-index: 10;
+        }
+
+        .block.ghost {
+            background: transparent !important;
+            border: 2px dashed rgba(255,255,255,0.5);
+            box-shadow: none;
+            z-index: 1;
+        }
+        .block.ghost::before, .block.ghost::after, .block.ghost .mouth { display: none; }
+
+        .block.has-face::before {
+            content: '';
+            position: absolute;
+            top: 25%; left: 20%;
+            width: 18%; height: 18%;
+            background: white;
+            border-radius: 50%;
+            box-shadow: calc(var(--block-size) * 0.4) 0 0 white;
+        }
+        .block.has-face::after {
+            content: '';
+            position: absolute;
+            top: 30%; left: 25%;
+            width: 8%; height: 8%;
+            background: #333;
+            border-radius: 50%;
+            box-shadow: calc(var(--block-size) * 0.4) 0 0 #333;
+        }
+        .block .mouth {
+            position: absolute;
+            bottom: 20%; left: 50%;
+            transform: translateX(-50%);
+            width: 40%; height: 20%;
+            background: #c0392b;
+            border-radius: 0 0 50% 50%;
+        }
+
+        .color-1 { background: linear-gradient(145deg, #e74c3c, #c0392b); }
+        .color-2 { background: linear-gradient(145deg, #e67e22, #d35400); }
+        .color-3 { background: linear-gradient(145deg, #f1c40f, #f39c12); }
+        .color-4 { background: linear-gradient(145deg, #2ecc71, #27ae60); }
+        .color-5 { background: linear-gradient(145deg, #3498db, #2980b9); }
+        .color-6 { background: linear-gradient(145deg, #9b59b6, #8e44ad); }
+        .color-7 { background: linear-gradient(145deg, #1abc9c, #16a085); }
+        .color-8 { background: linear-gradient(145deg, #e91e63, #c2185b); }
+        .color-9 { background: linear-gradient(145deg, #00bcd4, #0097a7); }
+        .color-10 { background: linear-gradient(145deg, #ffeb3b, #ffc107); }
+
+        .feedback { font-size: 16px; color: white; text-align: center; min-height: 22px; }
+        .feedback.correct { color: #2ecc71; }
+        .feedback.wrong { color: #e74c3c; }
+
+        .input-area { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+        .number-pad { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+        .num-btn {
+            width: 46px; height: 46px;
+            border-radius: 10px; border: none;
+            font-size: 22px;
+            font-family: 'Nunito', sans-serif;
+            font-weight: 900;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: white;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+        }
+        .num-btn:hover { transform: scale(1.1); }
+        .num-btn:active { transform: scale(0.95); }
+        .num-btn.digit-0 { background: linear-gradient(145deg, #95a5a6, #7f8c8d); }
+        .num-btn.digit-1 { background: linear-gradient(145deg, #e74c3c, #c0392b); }
+        .num-btn.digit-2 { background: linear-gradient(145deg, #e67e22, #d35400); }
+        .num-btn.digit-3 { background: linear-gradient(145deg, #f1c40f, #f39c12); }
+        .num-btn.digit-4 { background: linear-gradient(145deg, #2ecc71, #27ae60); }
+        .num-btn.digit-5 { background: linear-gradient(145deg, #3498db, #2980b9); }
+        .num-btn.digit-6 { background: linear-gradient(145deg, #9b59b6, #8e44ad); }
+        .num-btn.digit-7 { background: linear-gradient(145deg, #1abc9c, #16a085); }
+        .num-btn.digit-8 { background: linear-gradient(145deg, #e91e63, #c2185b); }
+        .num-btn.digit-9 { background: linear-gradient(145deg, #00bcd4, #0097a7); }
+
+        .action-buttons { display: flex; gap: 8px; }
+        .action-btn { padding: 8px 16px; border-radius: 16px; border: none; font-family: 'Fredoka One', cursive; font-size: 13px; cursor: pointer; transition: all 0.3s; box-shadow: 0 3px 10px rgba(0,0,0,0.2); color: white; }
+        .action-btn.submit { background: linear-gradient(145deg, #2ecc71, #27ae60); }
+        .action-btn.clear { background: linear-gradient(145deg, #e74c3c, #c0392b); }
+        .action-btn.next { background: linear-gradient(145deg, #3498db, #2980b9); }
+        .action-btn:hover { transform: scale(1.05); }
+
+        .home-btn {
+            position: fixed; bottom: 15px; left: 15px;
+            width: 45px; height: 45px;
+            border-radius: 50%; border: none;
+            font-size: 22px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            background: linear-gradient(145deg, #667eea, #764ba2);
+            color: white; text-decoration: none;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            transition: all 0.3s; z-index: 10;
+        }
+        .home-btn:hover { transform: scale(1.15); }
+
+        @media (max-height: 650px) {
+            :root { --block-size: 26px; }
+            .number-display, .answer-input { font-size: 32px; }
+            .number-display, .answer-box { height: 40px; line-height: 40px; }
+            .operator { height: 40px; line-height: 40px; font-size: 28px; }
+            .num-btn { width: 40px; height: 40px; font-size: 18px; }
+        }
+        @media (max-width: 600px) {
+            .controls { flex-direction: column; gap: 4px; }
+            .nav-hint { display: none; }
+            :root { --block-size: 24px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="bubbles" id="bubbles"></div>
+
+    <div class="controls">
+        <div class="control-panel">
+            <label>🌐 Lang</label>
+            <button class="control-btn active" data-lang="chinese" onclick="setLanguage('chinese')">🇨🇳 中文</button>
+            <button class="control-btn" data-lang="english" onclick="setLanguage('english')">🇺🇸 EN</button>
+        </div>
+        <div class="control-panel">
+            <label>🔢 Range</label>
+            <button class="control-btn active" data-range="5" onclick="setRange(5)">0~5</button>
+            <button class="control-btn" data-range="10" onclick="setRange(10)">0~10</button>
+            <button class="control-btn" data-range="20" onclick="setRange(20)">0~20</button>
+            <button class="control-btn" data-range="100" onclick="setRange(100)">0~100</button>
+        </div>
+    </div>
+
+    <div class="nav-hint">→ Answer/Next<br>← Back</div>
+
+    <div class="main-container">
+        <div class="quiz-area">
+            <div class="equation-with-blocks">
+                <div class="number-column">
+                    <div class="number-display" id="num1">2</div>
+                    <div class="blocks-area" id="blocks1"></div>
+                </div>
+                <div class="operator">+</div>
+                <div class="number-column">
+                    <div class="number-display" id="num2">3</div>
+                    <div class="blocks-area" id="blocks2"></div>
+                </div>
+                <div class="operator">=</div>
+                <div class="number-column">
+                    <div class="answer-box" id="answerBox">
+                        <input type="text" class="answer-input" id="answerInput" maxlength="3" readonly>
+                    </div>
+                    <div class="blocks-area" id="blocksResult"></div>
+                </div>
+            </div>
+            <div class="feedback" id="feedback"></div>
+        </div>
+
+        <div class="input-area">
+            <div class="number-pad">
+                <button class="num-btn digit-1" onclick="inputDigit(1)">1</button>
+                <button class="num-btn digit-2" onclick="inputDigit(2)">2</button>
+                <button class="num-btn digit-3" onclick="inputDigit(3)">3</button>
+                <button class="num-btn digit-4" onclick="inputDigit(4)">4</button>
+                <button class="num-btn digit-5" onclick="inputDigit(5)">5</button>
+                <button class="num-btn digit-6" onclick="inputDigit(6)">6</button>
+                <button class="num-btn digit-7" onclick="inputDigit(7)">7</button>
+                <button class="num-btn digit-8" onclick="inputDigit(8)">8</button>
+                <button class="num-btn digit-9" onclick="inputDigit(9)">9</button>
+                <button class="num-btn digit-0" onclick="inputDigit(0)">0</button>
+            </div>
+            <div class="action-buttons">
+                <button class="action-btn submit" onclick="checkAnswer()">✓ Check</button>
+                <button class="action-btn clear" onclick="clearAnswer()">✕ Clear</button>
+                <button class="action-btn next" onclick="nextQuiz()">→ Next</button>
+            </div>
+        </div>
+    </div>
+
+    <a href="index.html" class="home-btn" title="Home">🏠</a>
+
+    <script>
+        let num1 = 0, num2 = 0, correctAnswer = 0, currentAnswer = '';
+        let language = 'chinese', maxRange = 5, quizState = 'question';
+        let cachedVoices = [];
+
+        const chineseNumbers = { 0:'零',1:'一',2:'二',3:'三',4:'四',5:'五',6:'六',7:'七',8:'八',9:'九',10:'十' };
+
+        function getChineseNumber(num) {
+            if (num <= 10) return chineseNumbers[num];
+            if (num < 20) return '十' + (num % 10 === 0 ? '' : chineseNumbers[num % 10]);
+            if (num < 100) {
+                const tens = Math.floor(num / 10), ones = num % 10;
+                return chineseNumbers[tens] + '十' + (ones === 0 ? '' : chineseNumbers[ones]);
+            }
+            return '一百';
+        }
+
+        function loadVoices() {
+            return new Promise(resolve => {
+                cachedVoices = speechSynthesis.getVoices();
+                if (cachedVoices.length > 0) { resolve(); return; }
+                speechSynthesis.onvoiceschanged = () => { cachedVoices = speechSynthesis.getVoices(); resolve(); };
+                setTimeout(resolve, 1000);
+            });
+        }
+
+        function findVoice(lang) {
+            if (lang === 'chinese') return cachedVoices.find(v => v.lang.startsWith('zh-CN')) || cachedVoices.find(v => v.lang.startsWith('zh'));
+            return cachedVoices.find(v => v.lang === 'en-US') || cachedVoices.find(v => v.lang.startsWith('en'));
+        }
+
+        async function speak(text, lang) {
+            if (!('speechSynthesis' in window)) return;
+            speechSynthesis.cancel();
+            await new Promise(r => setTimeout(r, 100));
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.rate = 0.8; utterance.pitch = 1.1;
+            utterance.lang = lang === 'chinese' ? 'zh-CN' : 'en-US';
+            const voice = findVoice(lang);
+            if (voice) utterance.voice = voice;
+            speechSynthesis.speak(utterance);
+        }
+
+        function speakQuestion() {
+            speak(language === 'chinese' ? `${getChineseNumber(num1)} 加 ${getChineseNumber(num2)}` : `${num1} plus ${num2}`, language);
+        }
+
+        function speakAnswer() {
+            speak(language === 'chinese' ? `等于 ${getChineseNumber(correctAnswer)}` : `equals ${correctAnswer}`, language);
+        }
+
+        function createBubbles() {
+            const container = document.getElementById('bubbles');
+            const colors = ['#ff6b6b','#feca57','#48dbfb','#ff9ff3','#54a0ff','#5f27cd','#00d2d3','#ff9f43'];
+            for (let i = 0; i < 12; i++) {
+                const b = document.createElement('div');
+                b.className = 'bubble';
+                b.style.cssText = `left:${Math.random()*100}%;width:${Math.random()*30+15}px;height:${b.style.width};background:${colors[Math.floor(Math.random()*colors.length)]};animation-delay:${Math.random()*8}s;animation-duration:${Math.random()*4+6}s`;
+                b.style.height = b.style.width;
+                container.appendChild(b);
+            }
+        }
+
+        function getColorClass(row) { return 'color-' + ((row % 10) + 1); }
+        function getBlockSize() { return parseInt(getComputedStyle(document.documentElement).getPropertyValue('--block-size')); }
+
+        // Get column layout: e.g., 12 -> [10, 2], 25 -> [10, 10, 5]
+        function getColumnLayout(num) {
+            if (num === 0) return [];
+            const cols = [];
+            let remaining = num;
+            while (remaining > 0) {
+                cols.push(Math.min(10, remaining));
+                remaining -= 10;
+            }
+            return cols;
+        }
+
+        // Create a single block at a specific row position
+        function createBlock(row, isTop, isGhost = false) {
+            const blockSize = getBlockSize();
+            const block = document.createElement('div');
+            block.className = `block ${getColorClass(row)}`;
+            if (isGhost) block.classList.add('ghost');
+            block.style.bottom = (row * blockSize) + 'px';
+            
+            if (isTop && !isGhost) {
+                block.classList.add('has-face');
+                const mouth = document.createElement('div');
+                mouth.className = 'mouth';
+                block.appendChild(mouth);
+            }
+            return block;
+        }
+
+        // Determine which addend is the "base" (has more full columns of 10)
+        function getBaseAddend(n1, n2) {
+            const fullCols1 = Math.floor(n1 / 10);
+            const fullCols2 = Math.floor(n2 / 10);
+            // The one with more full columns is the base
+            // If equal, first addend (n1) is base
+            return fullCols2 > fullCols1 ? 2 : 1;
+        }
+
+        // Create blocks for an addend
+        // isBase: if true, natural layout at bottom; if false, offset to stack on top (may wrap)
+        function createAddendBlocks(container, count, otherCount, isBase, addendNum) {
+            container.innerHTML = '';
+            if (count === 0) return;
+
+            if (isBase) {
+                // Base addend: simple natural layout
+                const layout = getColumnLayout(count);
+                let blockIndex = 0;
+                
+                for (let c = 0; c < layout.length; c++) {
+                    const colDiv = document.createElement('div');
+                    colDiv.className = 'block-column';
+                    colDiv.dataset.col = c;
+                    
+                    const colHeight = layout[c];
+                    for (let r = 0; r < colHeight; r++) {
+                        const isTopBlock = (r === colHeight - 1);
+                        const block = createBlock(r, isTopBlock);
+                        block.dataset.addend = addendNum;
+                        block.dataset.blockIndex = blockIndex++;
+                        colDiv.appendChild(block);
+                    }
+                    
+                    container.appendChild(colDiv);
+                }
+            } else {
+                // Top addend: needs to stack on base's partial, may wrap to next column
+                const baseRemainder = otherCount % 10;
+                const spaceInFirstCol = baseRemainder === 0 ? 10 : (10 - baseRemainder);
+                
+                let remaining = count;
+                let blockIndex = 0;
+                let colIndex = 0;
+                let currentRowStart = baseRemainder === 0 ? 0 : baseRemainder;
+                
+                while (remaining > 0) {
+                    const colDiv = document.createElement('div');
+                    colDiv.className = 'block-column';
+                    colDiv.dataset.col = colIndex;
+                    
+                    // How many blocks in this column?
+                    const blocksInThisCol = colIndex === 0 
+                        ? Math.min(spaceInFirstCol, remaining)
+                        : Math.min(10, remaining);
+                    
+                    for (let r = 0; r < blocksInThisCol; r++) {
+                        const actualRow = currentRowStart + r;
+                        const isTopBlock = (remaining - blocksInThisCol + r === count - 1);
+                        const block = createBlock(actualRow, isTopBlock);
+                        block.dataset.addend = addendNum;
+                        block.dataset.blockIndex = blockIndex++;
+                        colDiv.appendChild(block);
+                    }
+                    
+                    container.appendChild(colDiv);
+                    remaining -= blocksInThisCol;
+                    colIndex++;
+                    currentRowStart = 0; // Subsequent columns start at row 0
+                }
+            }
+        }
+
+        // Create result blocks
+        function createResultBlocks(container, count) {
+            container.innerHTML = '';
+            if (count === 0) return;
+
+            const layout = getColumnLayout(count);
+            
+            for (let c = 0; c < layout.length; c++) {
+                const colDiv = document.createElement('div');
+                colDiv.className = 'block-column';
+                
+                const colHeight = layout[c];
+                for (let r = 0; r < colHeight; r++) {
+                    const isTop = (r === colHeight - 1) && (c === layout.length - 1);
+                    const block = createBlock(r, isTop);
+                    colDiv.appendChild(block);
+                }
+                
+                container.appendChild(colDiv);
+            }
+        }
+
+        // Create ghost blocks in place of real blocks
+        function createGhostBlocksFrom(container) {
+            const blocks = container.querySelectorAll('.block:not(.ghost)');
+            blocks.forEach(block => {
+                const ghost = document.createElement('div');
+                ghost.className = 'block ghost';
+                ghost.style.bottom = block.style.bottom;
+                block.parentElement.insertBefore(ghost, block);
+            });
+        }
+
+        function generateQuiz() {
+            quizState = 'question';
+            currentAnswer = '';
+            
+            num1 = Math.floor(Math.random() * (maxRange + 1));
+            num2 = Math.floor(Math.random() * (maxRange + 1 - num1));
+            correctAnswer = num1 + num2;
+            
+            document.getElementById('num1').textContent = num1;
+            document.getElementById('num2').textContent = num2;
+            document.getElementById('answerInput').value = '';
+            document.getElementById('answerBox').className = 'answer-box';
+            document.getElementById('feedback').textContent = '';
+            document.getElementById('feedback').className = 'feedback';
+            document.getElementById('blocksResult').innerHTML = '';
+            
+            const baseAddend = getBaseAddend(num1, num2);
+            createAddendBlocks(document.getElementById('blocks1'), num1, num2, baseAddend === 1, '1');
+            createAddendBlocks(document.getElementById('blocks2'), num2, num1, baseAddend === 2, '2');
+            
+            setTimeout(() => speakQuestion(), 300);
+        }
+
+        function setLanguage(lang) {
+            language = lang;
+            document.querySelectorAll('[data-lang]').forEach(btn => btn.classList.toggle('active', btn.dataset.lang === lang));
+            if (quizState === 'question') speakQuestion();
+        }
+
+        function setRange(range) {
+            maxRange = range;
+            document.querySelectorAll('[data-range]').forEach(btn => btn.classList.toggle('active', parseInt(btn.dataset.range) === range));
+            generateQuiz();
+        }
+
+        function inputDigit(digit) {
+            if (quizState !== 'question') return;
+            if (currentAnswer.length < 3) {
+                currentAnswer += digit;
+                document.getElementById('answerInput').value = currentAnswer;
+                if (currentAnswer.length === correctAnswer.toString().length) {
+                    setTimeout(() => checkAnswer(), 200);
+                }
+            }
+        }
+
+        function clearAnswer() {
+            currentAnswer = '';
+            document.getElementById('answerInput').value = '';
+            document.getElementById('answerBox').className = 'answer-box';
+            document.getElementById('feedback').textContent = '';
+            document.getElementById('feedback').className = 'feedback';
+        }
+
+        function animateBlocksMerge() {
+            const blocks1Area = document.getElementById('blocks1');
+            const blocks2Area = document.getElementById('blocks2');
+            const resultArea = document.getElementById('blocksResult');
+            
+            // First, create the result structure
+            createResultBlocks(resultArea, correctAnswer);
+            
+            // Calculate positions
+            const resultRect = resultArea.getBoundingClientRect();
+            const blocks1Rect = blocks1Area.getBoundingClientRect();
+            const blocks2Rect = blocks2Area.getBoundingClientRect();
+            
+            const blockSize = getBlockSize();
+            const colGap = 3;
+            const colWidth = blockSize + colGap;
+            
+            const baseAddend = getBaseAddend(num1, num2);
+            const baseNum = baseAddend === 1 ? num1 : num2;
+            const topNum = baseAddend === 1 ? num2 : num1;
+            const baseCols = getColumnLayout(baseNum);
+            const baseRemainder = baseNum % 10;
+            
+            // Add ghost blocks immediately
+            createGhostBlocksFrom(blocks1Area);
+            createGhostBlocksFrom(blocks2Area);
+            
+            // Animate BASE addend blocks - they go to result columns starting from 0
+            const baseArea = baseAddend === 1 ? blocks1Area : blocks2Area;
+            const baseRect = baseAddend === 1 ? blocks1Rect : blocks2Rect;
+            
+            baseArea.querySelectorAll('.block-column').forEach((col, cIdx) => {
+                const colBlocks = col.querySelectorAll('.block:not(.ghost)');
+                const targetColX = resultRect.left + cIdx * colWidth - baseRect.left;
+                colBlocks.forEach(block => {
+                    block.style.transform = `translateX(${targetColX}px)`;
+                });
+            });
+            
+            // Animate TOP addend blocks - they stack on base's last partial column (may wrap)
+            const topArea = baseAddend === 1 ? blocks2Area : blocks1Area;
+            const topRect = baseAddend === 1 ? blocks2Rect : blocks1Rect;
+            
+            // Calculate where top addend's columns should go
+            // First column goes to base's last column (to stack on partial)
+            // Subsequent columns go to new columns in result
+            const topFirstColTarget = baseNum === 0 ? 0 : (baseRemainder === 0 ? baseCols.length : baseCols.length - 1);
+            
+            topArea.querySelectorAll('.block-column').forEach((col, cIdx) => {
+                const colBlocks = col.querySelectorAll('.block:not(.ghost)');
+                const targetCol = topFirstColTarget + cIdx;
+                const targetColX = resultRect.left + targetCol * colWidth - topRect.left;
+                colBlocks.forEach(block => {
+                    block.style.transform = `translateX(${targetColX}px)`;
+                });
+            });
+            
+            // After animation, hide originals
+            setTimeout(() => {
+                blocks1Area.querySelectorAll('.block:not(.ghost)').forEach(b => b.style.opacity = '0');
+                blocks2Area.querySelectorAll('.block:not(.ghost)').forEach(b => b.style.opacity = '0');
+            }, 500);
+        }
+
+        function checkAnswer() {
+            if (quizState !== 'question' || currentAnswer === '') return;
+            
+            const userAnswer = parseInt(currentAnswer);
+            const answerBox = document.getElementById('answerBox');
+            const feedback = document.getElementById('feedback');
+            
+            if (userAnswer === correctAnswer) {
+                answerBox.className = 'answer-box correct';
+                feedback.textContent = language === 'chinese' ? '🎉 正确！' : '🎉 Correct!';
+                feedback.className = 'feedback correct';
+                quizState = 'answered';
+                animateBlocksMerge();
+                setTimeout(() => speakAnswer(), 500);
+            } else {
+                answerBox.className = 'answer-box wrong';
+                feedback.textContent = language === 'chinese' ? '❌ 再试一次' : '❌ Try again';
+                feedback.className = 'feedback wrong';
+                setTimeout(() => clearAnswer(), 1000);
+            }
+        }
+
+        function showAnswer() {
+            if (quizState === 'showing-result') { nextQuiz(); return; }
+            currentAnswer = correctAnswer.toString();
+            document.getElementById('answerInput').value = currentAnswer;
+            document.getElementById('answerBox').className = 'answer-box correct';
+            document.getElementById('feedback').textContent = '';
+            quizState = 'showing-result';
+            animateBlocksMerge();
+            speakAnswer();
+        }
+
+        function nextQuiz() { generateQuiz(); }
+        function backToQuiz() { if (quizState !== 'question') generateQuiz(); }
+
+        document.addEventListener('keydown', e => {
+            if (e.key === 'ArrowRight') { quizState === 'question' ? showAnswer() : nextQuiz(); }
+            else if (e.key === 'ArrowLeft') { backToQuiz(); }
+            else if (e.key >= '0' && e.key <= '9') { inputDigit(parseInt(e.key)); }
+            else if (e.key === 'Backspace') { currentAnswer = currentAnswer.slice(0,-1); document.getElementById('answerInput').value = currentAnswer; }
+            else if (e.key === 'Enter') { quizState === 'question' && currentAnswer !== '' ? checkAnswer() : (quizState !== 'question' && nextQuiz()); }
+        });
+
+        createBubbles();
+        loadVoices().then(() => generateQuiz());
+    </script>
+</body>
+</html>
