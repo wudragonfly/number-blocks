@@ -36,11 +36,12 @@
 
         .main-container { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; gap: 10px; width: 100%; max-width: 900px; padding: 10px; }
 
-        .quiz-area { background: rgba(255,255,255,0.15); border-radius: 20px; padding: 15px 20px; backdrop-filter: blur(10px); display: flex; flex-direction: column; align-items: center; gap: 10px; width: 100%; }
+        .quiz-area { background: rgba(255,255,255,0.15); border-radius: 20px; padding: 15px 10px; backdrop-filter: blur(10px); display: flex; flex-direction: column; align-items: center; gap: 10px; width: 100%; overflow-x: auto; }
 
-        .equation-with-blocks { display: flex; align-items: flex-start; justify-content: center; gap: 10px; }
+        .equation-with-blocks { display: flex; align-items: flex-start; justify-content: center; gap: 8px; flex-wrap: nowrap; }
 
-        .number-column { display: flex; flex-direction: column; align-items: center; gap: 5px; }
+        .number-column { display: flex; flex-direction: column; align-items: flex-start; gap: 5px; }
+        .number-column.result { min-width: 90px; }
 
         .number-display {
             font-size: clamp(32px, 6vw, 48px);
@@ -49,7 +50,7 @@
             font-family: 'Nunito', sans-serif;
             font-weight: 900;
             min-width: 50px;
-            text-align: center;
+            text-align: left;
             height: 50px;
             line-height: 50px;
         }
@@ -63,15 +64,15 @@
         }
 
         .answer-box {
-            min-width: 60px;
-            padding: 0 10px;
+            min-width: 90px;
+            padding: 0 15px;
             background: rgba(255,255,255,0.2);
             border-radius: 10px;
             border: 3px dashed rgba(255,255,255,0.5);
             height: 50px;
             display: flex;
             align-items: center;
-            justify-content: center;
+            justify-content: flex-start;
         }
         .answer-box.correct { border: 3px solid #2ecc71; background: rgba(46, 204, 113, 0.3); }
         .answer-box.wrong { border: 3px solid #e74c3c; background: rgba(231, 76, 60, 0.3); animation: shake 0.5s; }
@@ -91,16 +92,16 @@
             background: transparent;
             border: none;
             outline: none;
-            width: 70px;
-            text-align: center;
+            width: 90px;
+            text-align: left;
         }
 
         .blocks-area {
             display: flex;
             align-items: flex-end;
-            justify-content: center;
+            justify-content: flex-start;
             height: calc(var(--block-size) * 10);
-            gap: 3px;
+            gap: 2px;
         }
 
         .block-column {
@@ -265,7 +266,7 @@
                     <div class="blocks-area" id="blocks2"></div>
                 </div>
                 <div class="operator">=</div>
-                <div class="number-column">
+                <div class="number-column result">
                     <div class="answer-box" id="answerBox">
                         <input type="text" class="answer-input" id="answerInput" maxlength="3" readonly>
                     </div>
@@ -302,6 +303,7 @@
         let num1 = 0, num2 = 0, correctAnswer = 0, currentAnswer = '';
         let language = 'chinese', maxRange = 5, quizState = 'question';
         let cachedVoices = [];
+        let isAnimating = false;
 
         const chineseNumbers = { 0:'零',1:'一',2:'二',3:'三',4:'四',5:'五',6:'六',7:'七',8:'八',9:'九',10:'十' };
 
@@ -393,34 +395,75 @@
             return block;
         }
 
-        // Determine which addend is the "base" (has more full columns of 10)
+        // Determine which addend is the "base" (has more tens, provides bottom ones position)
         function getBaseAddend(n1, n2) {
-            const fullCols1 = Math.floor(n1 / 10);
-            const fullCols2 = Math.floor(n2 / 10);
-            // The one with more full columns is the base
-            // If equal, first addend (n1) is base
-            return fullCols2 > fullCols1 ? 2 : 1;
+            const tens1 = Math.floor(n1 / 10);
+            const tens2 = Math.floor(n2 / 10);
+            // The one with more tens is the base (its ones go at bottom)
+            // If equal tens, first addend is base
+            return tens2 > tens1 ? 2 : 1;
+        }
+
+        // Determine which addend's ones go at bottom (for stacking)
+        // When sum of ones > 10, we want to split the SMALLER ones digit
+        // So the BIGGER ones should be at the bottom (base)
+        function getOnesBaseAddend(n1, n2) {
+            const ones1 = n1 % 10;
+            const ones2 = n2 % 10;
+            // The one with more ones is the base (its ones go at bottom)
+            // If equal, first addend is base
+            return ones2 > ones1 ? 2 : 1;
         }
 
         // Create blocks for an addend
-        // isBase: if true, natural layout at bottom; if false, offset to stack on top (may wrap)
+        // Tens (full columns) are NEVER split - always displayed as complete columns
+        // Only ones (partial) get offset to stack on the base addend's ones
+        // When sum of ones > 10, split the SMALLER ones digit (not the bigger)
         function createAddendBlocks(container, count, otherCount, isBase, addendNum) {
             container.innerHTML = '';
             if (count === 0) return;
 
-            if (isBase) {
-                // Base addend: simple natural layout
-                const layout = getColumnLayout(count);
-                let blockIndex = 0;
+            const tens = Math.floor(count / 10);  // Number of full columns
+            const ones = count % 10;               // Partial column count
+            const otherOnes = otherCount % 10;     // Other addend's ones (for offset calculation)
+            
+            // Determine if this addend's ones should be at bottom
+            // The addend with LARGER ones goes at bottom, smaller ones stack on top (and may split)
+            // If equal, first addend (addendNum === '1') is base
+            const isOnesBase = ones > otherOnes || (ones === otherOnes && addendNum === '1');
+            
+            let blockIndex = 0;
+            
+            // Create TENS columns (full columns of 10) - always at natural positions
+            for (let c = 0; c < tens; c++) {
+                const colDiv = document.createElement('div');
+                colDiv.className = 'block-column';
+                colDiv.dataset.col = c;
+                colDiv.dataset.type = 'tens';
                 
-                for (let c = 0; c < layout.length; c++) {
+                for (let r = 0; r < 10; r++) {
+                    const isTopBlock = (r === 9);
+                    const block = createBlock(r, isTopBlock);
+                    block.dataset.addend = addendNum;
+                    block.dataset.blockIndex = blockIndex++;
+                    colDiv.appendChild(block);
+                }
+                
+                container.appendChild(colDiv);
+            }
+            
+            // Create ONES column (partial) - may be offset and may wrap
+            if (ones > 0) {
+                if (isOnesBase) {
+                    // This addend's ones at natural position (rows 0 to ones-1)
                     const colDiv = document.createElement('div');
                     colDiv.className = 'block-column';
-                    colDiv.dataset.col = c;
+                    colDiv.dataset.col = tens;
+                    colDiv.dataset.type = 'ones';
                     
-                    const colHeight = layout[c];
-                    for (let r = 0; r < colHeight; r++) {
-                        const isTopBlock = (r === colHeight - 1);
+                    for (let r = 0; r < ones; r++) {
+                        // Face on top block of this column
+                        const isTopBlock = (r === ones - 1);
                         const block = createBlock(r, isTopBlock);
                         block.dataset.addend = addendNum;
                         block.dataset.blockIndex = blockIndex++;
@@ -428,40 +471,44 @@
                     }
                     
                     container.appendChild(colDiv);
-                }
-            } else {
-                // Top addend: needs to stack on base's partial, may wrap to next column
-                const baseRemainder = otherCount % 10;
-                const spaceInFirstCol = baseRemainder === 0 ? 10 : (10 - baseRemainder);
-                
-                let remaining = count;
-                let blockIndex = 0;
-                let colIndex = 0;
-                let currentRowStart = baseRemainder === 0 ? 0 : baseRemainder;
-                
-                while (remaining > 0) {
+                } else {
+                    // This addend's ones (smaller) stack on top of the bigger ones
+                    // If overflow, put overflow blocks at bottom of SAME column (with gap)
+                    const offset = otherOnes;  // Start at row = otherOnes
+                    const spaceAtTop = 10 - offset;  // How many fit at top (rows offset to 9)
+                    
                     const colDiv = document.createElement('div');
                     colDiv.className = 'block-column';
-                    colDiv.dataset.col = colIndex;
+                    colDiv.dataset.col = tens;
+                    colDiv.dataset.type = 'ones';
                     
-                    // How many blocks in this column?
-                    const blocksInThisCol = colIndex === 0 
-                        ? Math.min(spaceInFirstCol, remaining)
-                        : Math.min(10, remaining);
+                    const blocksAtTop = Math.min(spaceAtTop, ones);
+                    const blocksAtBottom = ones - blocksAtTop;  // Overflow goes to bottom
                     
-                    for (let r = 0; r < blocksInThisCol; r++) {
-                        const actualRow = currentRowStart + r;
-                        const isTopBlock = (remaining - blocksInThisCol + r === count - 1);
+                    // Create blocks at bottom first (rows 0 to blocksAtBottom-1)
+                    for (let r = 0; r < blocksAtBottom; r++) {
+                        // Face on top block of bottom section
+                        const isTopBlock = (r === blocksAtBottom - 1);
+                        const block = createBlock(r, isTopBlock);
+                        block.dataset.addend = addendNum;
+                        block.dataset.blockIndex = blockIndex++;
+                        block.dataset.position = 'bottom';  // Mark for animation
+                        colDiv.appendChild(block);
+                    }
+                    
+                    // Create blocks at top (rows offset to offset+blocksAtTop-1)
+                    for (let r = 0; r < blocksAtTop; r++) {
+                        const actualRow = offset + r;
+                        // Face on top block of top section
+                        const isTopBlock = (r === blocksAtTop - 1);
                         const block = createBlock(actualRow, isTopBlock);
                         block.dataset.addend = addendNum;
                         block.dataset.blockIndex = blockIndex++;
+                        block.dataset.position = 'top';  // Mark for animation
                         colDiv.appendChild(block);
                     }
                     
                     container.appendChild(colDiv);
-                    remaining -= blocksInThisCol;
-                    colIndex++;
-                    currentRowStart = 0; // Subsequent columns start at row 0
                 }
             }
         }
@@ -479,7 +526,8 @@
                 
                 const colHeight = layout[c];
                 for (let r = 0; r < colHeight; r++) {
-                    const isTop = (r === colHeight - 1) && (c === layout.length - 1);
+                    // Face on top block of EVERY column
+                    const isTop = (r === colHeight - 1);
                     const block = createBlock(r, isTop);
                     colDiv.appendChild(block);
                 }
@@ -500,8 +548,15 @@
         }
 
         function generateQuiz() {
+            // Reset animation state
+            isAnimating = false;
             quizState = 'question';
             currentAnswer = '';
+            
+            // Clear all blocks first (including any mid-animation blocks)
+            document.getElementById('blocks1').innerHTML = '';
+            document.getElementById('blocks2').innerHTML = '';
+            document.getElementById('blocksResult').innerHTML = '';
             
             num1 = Math.floor(Math.random() * (maxRange + 1));
             num2 = Math.floor(Math.random() * (maxRange + 1 - num1));
@@ -513,7 +568,6 @@
             document.getElementById('answerBox').className = 'answer-box';
             document.getElementById('feedback').textContent = '';
             document.getElementById('feedback').className = 'feedback';
-            document.getElementById('blocksResult').innerHTML = '';
             
             const baseAddend = getBaseAddend(num1, num2);
             createAddendBlocks(document.getElementById('blocks1'), num1, num2, baseAddend === 1, '1');
@@ -571,39 +625,63 @@
             const colWidth = blockSize + colGap;
             
             const baseAddend = getBaseAddend(num1, num2);
-            const baseNum = baseAddend === 1 ? num1 : num2;
-            const topNum = baseAddend === 1 ? num2 : num1;
-            const baseCols = getColumnLayout(baseNum);
-            const baseRemainder = baseNum % 10;
+            
+            // Calculate tens and ones for each addend
+            const tens1 = Math.floor(num1 / 10);
+            const tens2 = Math.floor(num2 / 10);
+            const totalTens = Math.floor(correctAnswer / 10);
             
             // Add ghost blocks immediately
             createGhostBlocksFrom(blocks1Area);
             createGhostBlocksFrom(blocks2Area);
             
-            // Animate BASE addend blocks - they go to result columns starting from 0
+            // Determine the order: base addend's tens first, then non-base's tens
+            // Then ones all go to the last column(s)
+            const baseTens = baseAddend === 1 ? tens1 : tens2;
+            const topTens = baseAddend === 1 ? tens2 : tens1;
+            
+            // Animate BASE addend
             const baseArea = baseAddend === 1 ? blocks1Area : blocks2Area;
             const baseRect = baseAddend === 1 ? blocks1Rect : blocks2Rect;
             
-            baseArea.querySelectorAll('.block-column').forEach((col, cIdx) => {
+            baseArea.querySelectorAll('.block-column').forEach((col) => {
                 const colBlocks = col.querySelectorAll('.block:not(.ghost)');
-                const targetColX = resultRect.left + cIdx * colWidth - baseRect.left;
+                const colIndex = parseInt(col.dataset.col);
+                const colType = col.dataset.type;
+                
+                let targetCol;
+                if (colType === 'tens') {
+                    // Base tens go to result columns 0 to baseTens-1
+                    targetCol = colIndex;
+                } else {
+                    // Base ones go to result's ones column (after all tens)
+                    targetCol = totalTens + colIndex - baseTens;
+                }
+                
+                const targetColX = resultRect.left + targetCol * colWidth - baseRect.left;
                 colBlocks.forEach(block => {
                     block.style.transform = `translateX(${targetColX}px)`;
                 });
             });
             
-            // Animate TOP addend blocks - they stack on base's last partial column (may wrap)
+            // Animate TOP addend
             const topArea = baseAddend === 1 ? blocks2Area : blocks1Area;
             const topRect = baseAddend === 1 ? blocks2Rect : blocks1Rect;
             
-            // Calculate where top addend's columns should go
-            // First column goes to base's last column (to stack on partial)
-            // Subsequent columns go to new columns in result
-            const topFirstColTarget = baseNum === 0 ? 0 : (baseRemainder === 0 ? baseCols.length : baseCols.length - 1);
-            
-            topArea.querySelectorAll('.block-column').forEach((col, cIdx) => {
+            topArea.querySelectorAll('.block-column').forEach((col) => {
                 const colBlocks = col.querySelectorAll('.block:not(.ghost)');
-                const targetCol = topFirstColTarget + cIdx;
+                const colIndex = parseInt(col.dataset.col);
+                const colType = col.dataset.type;
+                
+                let targetCol;
+                if (colType === 'tens') {
+                    // Top tens go after base tens: columns baseTens to baseTens+topTens-1
+                    targetCol = baseTens + colIndex;
+                } else {
+                    // Top ones go to result's ones column(s) (after all tens)
+                    targetCol = totalTens + (colIndex - topTens);
+                }
+                
                 const targetColX = resultRect.left + targetCol * colWidth - topRect.left;
                 colBlocks.forEach(block => {
                     block.style.transform = `translateX(${targetColX}px)`;
@@ -618,7 +696,7 @@
         }
 
         function checkAnswer() {
-            if (quizState !== 'question' || currentAnswer === '') return;
+            if (quizState !== 'question' || currentAnswer === '' || isAnimating) return;
             
             const userAnswer = parseInt(currentAnswer);
             const answerBox = document.getElementById('answerBox');
@@ -629,8 +707,10 @@
                 feedback.textContent = language === 'chinese' ? '🎉 正确！' : '🎉 Correct!';
                 feedback.className = 'feedback correct';
                 quizState = 'answered';
+                isAnimating = true;
                 animateBlocksMerge();
                 setTimeout(() => speakAnswer(), 500);
+                setTimeout(() => { isAnimating = false; }, 600);
             } else {
                 answerBox.className = 'answer-box wrong';
                 feedback.textContent = language === 'chinese' ? '❌ 再试一次' : '❌ Try again';
@@ -640,29 +720,59 @@
         }
 
         function showAnswer() {
+            if (isAnimating) return;  // Prevent during animation
             if (quizState === 'showing-result') { nextQuiz(); return; }
             currentAnswer = correctAnswer.toString();
             document.getElementById('answerInput').value = currentAnswer;
             document.getElementById('answerBox').className = 'answer-box correct';
             document.getElementById('feedback').textContent = '';
             quizState = 'showing-result';
+            isAnimating = true;
             animateBlocksMerge();
             speakAnswer();
+            setTimeout(() => { isAnimating = false; }, 600);
         }
 
         function nextQuiz() { generateQuiz(); }
-        function backToQuiz() { if (quizState !== 'question') generateQuiz(); }
+        
+        function backToQuiz() {
+            // Do nothing if already on quiz page
+            if (quizState === 'question') return;
+            
+            // Reset to show original quiz (same numbers, not new quiz)
+            isAnimating = false;
+            quizState = 'question';
+            currentAnswer = '';
+            
+            // Clear result and reset addend blocks
+            document.getElementById('blocksResult').innerHTML = '';
+            document.getElementById('answerInput').value = '';
+            document.getElementById('answerBox').className = 'answer-box';
+            document.getElementById('feedback').textContent = '';
+            document.getElementById('feedback').className = 'feedback';
+            
+            // Recreate addend blocks (removes ghosts and resets transforms)
+            const baseAddend = getBaseAddend(num1, num2);
+            createAddendBlocks(document.getElementById('blocks1'), num1, num2, baseAddend === 1, '1');
+            createAddendBlocks(document.getElementById('blocks2'), num2, num1, baseAddend === 2, '2');
+        }
 
         document.addEventListener('keydown', e => {
-            if (e.key === 'ArrowRight') { quizState === 'question' ? showAnswer() : nextQuiz(); }
+            if (e.key === 'ArrowRight') { 
+                if (quizState === 'question') showAnswer(); 
+                else if (!isAnimating) nextQuiz(); 
+            }
             else if (e.key === 'ArrowLeft') { backToQuiz(); }
             else if (e.key >= '0' && e.key <= '9') { inputDigit(parseInt(e.key)); }
             else if (e.key === 'Backspace') { currentAnswer = currentAnswer.slice(0,-1); document.getElementById('answerInput').value = currentAnswer; }
-            else if (e.key === 'Enter') { quizState === 'question' && currentAnswer !== '' ? checkAnswer() : (quizState !== 'question' && nextQuiz()); }
+            else if (e.key === 'Enter') { 
+                if (quizState === 'question' && currentAnswer !== '') checkAnswer(); 
+                else if (quizState !== 'question' && !isAnimating) nextQuiz(); 
+            }
         });
 
         createBubbles();
-        loadVoices().then(() => generateQuiz());
+        loadVoices().then(() => setRange(maxRange)); // Initialize with current range to set CSS variables
     </script>
 </body>
 </html>
