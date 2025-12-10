@@ -1,0 +1,1033 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Number Blocks - Subtraction</title>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@700;900&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root { --block-size: 32px; }
+        html, body { height: 100%; overflow: hidden; }
+
+        body {
+            font-family: 'Fredoka One', cursive;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 50%, #a8e063 100%);
+        }
+
+        .bubbles { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; overflow: hidden; z-index: 0; }
+        .bubble { position: absolute; bottom: -100px; border-radius: 50%; opacity: 0.6; animation: float-up 8s infinite ease-in; }
+        @keyframes float-up {
+            0% { transform: translateY(0) rotate(0deg); opacity: 0.6; }
+            100% { transform: translateY(-110vh) rotate(720deg); opacity: 0; }
+        }
+
+        .controls { position: fixed; top: 10px; left: 10px; display: flex; flex-direction: column; gap: 6px; z-index: 10; }
+        .control-panel { display: flex; flex-direction: column; gap: 3px; background: rgba(255,255,255,0.2); padding: 8px; border-radius: 10px; backdrop-filter: blur(10px); }
+        .control-panel label { color: white; font-size: 9px; text-transform: uppercase; letter-spacing: 1px; }
+        .control-panel.disabled { opacity: 0.5; pointer-events: none; }
+        .control-btn { background: rgba(255,255,255,0.3); border: 2px solid transparent; padding: 5px 8px; border-radius: 8px; font-family: 'Fredoka One', cursive; font-size: 11px; cursor: pointer; color: white; transition: all 0.3s; }
+        .control-btn:hover { background: rgba(255,255,255,0.4); }
+        .control-btn.active { background: linear-gradient(145deg, #a8e063, #56ab2f); color: #1a5928; border-color: white; }
+
+        .nav-hint { position: fixed; top: 10px; right: 10px; background: rgba(255,255,255,0.2); padding: 6px 10px; border-radius: 10px; color: white; font-size: 10px; backdrop-filter: blur(5px); line-height: 1.4; }
+
+        .main-container { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; gap: 10px; width: 100%; max-width: 900px; padding: 10px; }
+
+        .quiz-area { background: rgba(255,255,255,0.15); border-radius: 20px; padding: 15px 10px; backdrop-filter: blur(10px); display: flex; flex-direction: column; align-items: center; gap: 10px; width: 100%; overflow-x: auto; }
+
+        .equation-with-blocks { display: flex; align-items: flex-start; justify-content: center; gap: 8px; flex-wrap: nowrap; }
+        .equation-with-blocks.no-blocks { align-items: center; }
+
+        .number-column { display: flex; flex-direction: column; align-items: flex-start; gap: 5px; }
+        .number-column.result { min-width: 90px; }
+
+        .number-display {
+            font-size: clamp(32px, 6vw, 48px);
+            color: white;
+            text-shadow: 2px 2px 0 #2ecc71, 3px 3px 0 rgba(0,0,0,0.2);
+            font-family: 'Nunito', sans-serif;
+            font-weight: 900;
+            min-width: 50px;
+            text-align: left;
+            height: 50px;
+            line-height: 50px;
+        }
+
+        .operator {
+            font-size: clamp(28px, 5vw, 40px);
+            color: white;
+            text-shadow: 2px 2px 0 rgba(0,0,0,0.2);
+            height: 50px;
+            line-height: 50px;
+        }
+
+        .answer-box {
+            min-width: 90px;
+            padding: 0 15px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 10px;
+            border: 3px dashed rgba(255,255,255,0.5);
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+        }
+        .answer-box.correct { border: 3px solid #2ecc71; background: rgba(46, 204, 113, 0.3); }
+        .answer-box.wrong { border: 3px solid #e74c3c; background: rgba(231, 76, 60, 0.3); animation: shake 0.5s; }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-8px); }
+            40%, 80% { transform: translateX(8px); }
+        }
+
+        .answer-input {
+            font-size: clamp(32px, 6vw, 48px);
+            color: white;
+            text-shadow: 2px 2px 0 #2ecc71, 3px 3px 0 rgba(0,0,0,0.2);
+            font-family: 'Nunito', sans-serif;
+            font-weight: 900;
+            background: transparent;
+            border: none;
+            outline: none;
+            width: 90px;
+            text-align: left;
+        }
+
+        .blocks-wrapper {
+            display: flex;
+            align-items: flex-end;
+            position: relative;
+        }
+        .blocks-wrapper.hidden { display: none; }
+
+        .number-labels {
+            position: absolute;
+            right: 100%;
+            bottom: 0;
+            display: flex;
+            flex-direction: column-reverse;
+            justify-content: flex-start;
+            height: calc(var(--block-size) * 10);
+            margin-right: 4px;
+        }
+        .number-labels.hidden { display: none; }
+        .number-label {
+            height: var(--block-size);
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            font-family: 'Nunito', sans-serif;
+            font-weight: 700;
+            font-size: calc(var(--block-size) * 0.45);
+            color: rgba(255,255,255,0.8);
+            padding-right: 2px;
+            width: 24px;
+        }
+
+        .blocks-area {
+            display: flex;
+            align-items: flex-end;
+            justify-content: flex-start;
+            height: calc(var(--block-size) * 10);
+            gap: 2px;
+        }
+        .blocks-area.hidden {
+            display: none !important;
+            height: 0 !important;
+        }
+
+        .block-column {
+            display: flex;
+            flex-direction: column-reverse;
+            width: var(--block-size);
+            height: calc(var(--block-size) * 10);
+            position: relative;
+        }
+
+        .block {
+            width: var(--block-size);
+            height: var(--block-size);
+            border-radius: 4px;
+            position: absolute;
+            left: 0;
+            box-shadow: inset -2px -2px 0 rgba(0,0,0,0.2), inset 2px 2px 0 rgba(255,255,255,0.3), 2px 2px 5px rgba(0,0,0,0.3);
+            transition: transform 0.5s ease-out, opacity 0.3s ease-out;
+            z-index: 10;
+        }
+
+        .block.ghost {
+            background: transparent !important;
+            border: 2px dashed rgba(255,255,255,0.5);
+            box-shadow: none;
+            z-index: 1;
+        }
+        .block.ghost::before, .block.ghost::after, .block.ghost .mouth { display: none; }
+
+        .block.subtracted {
+            opacity: 0.5;
+        }
+
+        .block.has-face::before {
+            content: '';
+            position: absolute;
+            top: 25%; left: 20%;
+            width: 18%; height: 18%;
+            background: white;
+            border-radius: 50%;
+            box-shadow: calc(var(--block-size) * 0.4) 0 0 white;
+        }
+        .block.has-face::after {
+            content: '';
+            position: absolute;
+            top: 30%; left: 25%;
+            width: 8%; height: 8%;
+            background: #333;
+            border-radius: 50%;
+            box-shadow: calc(var(--block-size) * 0.4) 0 0 #333;
+        }
+        .block .mouth {
+            position: absolute;
+            bottom: 20%; left: 50%;
+            transform: translateX(-50%);
+            width: 40%; height: 20%;
+            background: #c0392b;
+            border-radius: 0 0 50% 50%;
+        }
+
+        .color-1 { background: linear-gradient(145deg, #e74c3c, #c0392b); }
+        .color-2 { background: linear-gradient(145deg, #e67e22, #d35400); }
+        .color-3 { background: linear-gradient(145deg, #f1c40f, #f39c12); }
+        .color-4 { background: linear-gradient(145deg, #2ecc71, #27ae60); }
+        .color-5 { background: linear-gradient(145deg, #3498db, #2980b9); }
+        .color-6 { background: linear-gradient(145deg, #9b59b6, #8e44ad); }
+        .color-7 { background: linear-gradient(145deg, #1abc9c, #16a085); }
+        .color-8 { background: linear-gradient(145deg, #e91e63, #c2185b); }
+        .color-9 { background: linear-gradient(145deg, #00bcd4, #0097a7); }
+        .color-10 { background: linear-gradient(145deg, #ffeb3b, #ffc107); }
+
+        .feedback { font-size: 16px; color: white; text-align: center; min-height: 22px; }
+        .feedback.correct { color: #2ecc71; }
+        .feedback.wrong { color: #e74c3c; }
+
+        .input-area { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+        .number-pad { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+        .num-btn {
+            width: 46px; height: 46px;
+            border-radius: 10px; border: none;
+            font-size: 22px;
+            font-family: 'Nunito', sans-serif;
+            font-weight: 900;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: white;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+        }
+        .num-btn:hover { transform: scale(1.1); }
+        .num-btn:active { transform: scale(0.95); }
+        .num-btn.digit-0 { background: linear-gradient(145deg, #95a5a6, #7f8c8d); }
+        .num-btn.digit-1 { background: linear-gradient(145deg, #e74c3c, #c0392b); }
+        .num-btn.digit-2 { background: linear-gradient(145deg, #e67e22, #d35400); }
+        .num-btn.digit-3 { background: linear-gradient(145deg, #f1c40f, #f39c12); }
+        .num-btn.digit-4 { background: linear-gradient(145deg, #2ecc71, #27ae60); }
+        .num-btn.digit-5 { background: linear-gradient(145deg, #3498db, #2980b9); }
+        .num-btn.digit-6 { background: linear-gradient(145deg, #9b59b6, #8e44ad); }
+        .num-btn.digit-7 { background: linear-gradient(145deg, #1abc9c, #16a085); }
+        .num-btn.digit-8 { background: linear-gradient(145deg, #e91e63, #c2185b); }
+        .num-btn.digit-9 { background: linear-gradient(145deg, #00bcd4, #0097a7); }
+
+        .action-buttons { display: flex; gap: 8px; }
+        .action-btn { padding: 8px 16px; border-radius: 16px; border: none; font-family: 'Fredoka One', cursive; font-size: 13px; cursor: pointer; transition: all 0.3s; box-shadow: 0 3px 10px rgba(0,0,0,0.2); color: white; }
+        .action-btn.submit { background: linear-gradient(145deg, #2ecc71, #27ae60); }
+        .action-btn.clear { background: linear-gradient(145deg, #e74c3c, #c0392b); }
+        .action-btn.next { background: linear-gradient(145deg, #3498db, #2980b9); }
+        .action-btn:hover { transform: scale(1.05); }
+
+        .home-btn {
+            position: fixed; bottom: 15px; left: 15px;
+            width: 45px; height: 45px;
+            border-radius: 50%; border: none;
+            font-size: 22px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            background: linear-gradient(145deg, #11998e, #38ef7d);
+            color: white; text-decoration: none;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            transition: all 0.3s; z-index: 10;
+        }
+        .home-btn:hover { transform: scale(1.15); }
+
+        @media (max-height: 650px) {
+            :root { --block-size: 26px; }
+            .number-display, .answer-input { font-size: 32px; }
+            .number-display, .answer-box { height: 40px; line-height: 40px; }
+            .operator { height: 40px; line-height: 40px; font-size: 28px; }
+            .num-btn { width: 40px; height: 40px; font-size: 18px; }
+        }
+        @media (max-width: 600px) {
+            .nav-hint { display: none; }
+            :root { --block-size: 24px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="bubbles" id="bubbles"></div>
+
+    <div class="controls">
+        <div class="control-panel">
+            <label id="labelLang">🌐 语言</label>
+            <button class="control-btn active" data-lang="chinese" onclick="initSpeechOnInteraction(); setLanguage('chinese')">🇨🇳 中文</button>
+            <button class="control-btn" data-lang="english" onclick="initSpeechOnInteraction(); setLanguage('english')">🇺🇸 EN</button>
+        </div>
+        <div class="control-panel">
+            <label id="labelRange">🔢 范围</label>
+            <button class="control-btn active" data-range="5" onclick="initSpeechOnInteraction(); setRange(5)">0~5</button>
+            <button class="control-btn" data-range="10" onclick="initSpeechOnInteraction(); setRange(10)">0~10</button>
+            <button class="control-btn" data-range="20" onclick="initSpeechOnInteraction(); setRange(20)">0~20</button>
+            <button class="control-btn" data-range="100" onclick="initSpeechOnInteraction(); setRange(100)">0~100</button>
+        </div>
+        <div class="control-panel">
+            <label id="labelBlocks">🧱 方块</label>
+            <button class="control-btn active" data-blocks="true" onclick="setShowBlocks(true)" id="btnBlocksShow">显示</button>
+            <button class="control-btn" data-blocks="false" onclick="setShowBlocks(false)" id="btnBlocksHide">隐藏</button>
+        </div>
+        <div class="control-panel" id="labelPanel">
+            <label id="labelLabels">🏷️ 标签</label>
+            <button class="control-btn active" data-labels="true" onclick="setShowLabels(true)" id="btnLabelsShow">显示</button>
+            <button class="control-btn" data-labels="false" onclick="setShowLabels(false)" id="btnLabelsHide">隐藏</button>
+        </div>
+    </div>
+
+    <div class="nav-hint" id="navHint">→ 答案/下一题<br>← 返回</div>
+
+    <div class="main-container">
+        <div class="quiz-area">
+            <div class="equation-with-blocks">
+                <div class="number-column">
+                    <div class="number-display" id="num1">5</div>
+                    <div class="blocks-wrapper" id="blocksWrapper1">
+                        <div class="number-labels" id="numberLabels">
+                            <div class="number-label">1</div>
+                            <div class="number-label">2</div>
+                            <div class="number-label">3</div>
+                            <div class="number-label">4</div>
+                            <div class="number-label">5</div>
+                            <div class="number-label">6</div>
+                            <div class="number-label">7</div>
+                            <div class="number-label">8</div>
+                            <div class="number-label">9</div>
+                            <div class="number-label">10</div>
+                        </div>
+                        <div class="blocks-area" id="blocks1"></div>
+                    </div>
+                </div>
+                <div class="operator">−</div>
+                <div class="number-column">
+                    <div class="number-display" id="num2">2</div>
+                    <div class="blocks-area" id="blocks2"></div>
+                </div>
+                <div class="operator">=</div>
+                <div class="number-column result">
+                    <div class="answer-box" id="answerBox">
+                        <input type="text" class="answer-input" id="answerInput" maxlength="3" readonly>
+                    </div>
+                    <div class="blocks-area" id="blocksResult"></div>
+                </div>
+            </div>
+            <div class="feedback" id="feedback"></div>
+        </div>
+
+        <div class="input-area">
+            <div class="number-pad">
+                <button class="num-btn digit-1" onclick="inputDigit(1)">1</button>
+                <button class="num-btn digit-2" onclick="inputDigit(2)">2</button>
+                <button class="num-btn digit-3" onclick="inputDigit(3)">3</button>
+                <button class="num-btn digit-4" onclick="inputDigit(4)">4</button>
+                <button class="num-btn digit-5" onclick="inputDigit(5)">5</button>
+                <button class="num-btn digit-6" onclick="inputDigit(6)">6</button>
+                <button class="num-btn digit-7" onclick="inputDigit(7)">7</button>
+                <button class="num-btn digit-8" onclick="inputDigit(8)">8</button>
+                <button class="num-btn digit-9" onclick="inputDigit(9)">9</button>
+                <button class="num-btn digit-0" onclick="inputDigit(0)">0</button>
+            </div>
+            <div class="action-buttons">
+                <button class="action-btn submit" onclick="initSpeechOnInteraction(); checkAnswer()" id="btnCheck">✓ 检查</button>
+                <button class="action-btn clear" onclick="initSpeechOnInteraction(); clearAnswer()" id="btnClear">✕ 清除</button>
+                <button class="action-btn next" onclick="initSpeechOnInteraction(); nextQuiz()" id="btnNext">→ 下一题</button>
+            </div>
+        </div>
+    </div>
+
+    <a href="index.html" class="home-btn" id="homeBtn" title="首页">🏠</a>
+
+    <script>
+        // minuend - subtrahend = difference
+        let minuend = 0, subtrahend = 0, correctAnswer = 0, currentAnswer = '';
+        let language = 'chinese', maxRange = 5, quizState = 'question';
+        let cachedVoices = [];
+        let voicesLoaded = false;
+        let isAnimating = false;
+        let showBlocks = true;
+        let showLabels = true;
+        let speechInitialized = false;
+
+        const chineseNumbers = { 0:'零',1:'一',2:'二',3:'三',4:'四',5:'五',6:'六',7:'七',8:'八',9:'九',10:'十' };
+
+        function getChineseNumber(num) {
+            if (num <= 10) return chineseNumbers[num];
+            if (num < 20) return '十' + (num % 10 === 0 ? '' : chineseNumbers[num % 10]);
+            if (num < 100) {
+                const tens = Math.floor(num / 10), ones = num % 10;
+                return chineseNumbers[tens] + '十' + (ones === 0 ? '' : chineseNumbers[ones]);
+            }
+            return '一百';
+        }
+
+        function loadVoices() {
+            return new Promise(resolve => {
+                if (!('speechSynthesis' in window)) {
+                    console.warn('Speech synthesis not supported');
+                    resolve();
+                    return;
+                }
+                
+                cachedVoices = speechSynthesis.getVoices();
+                if (cachedVoices.length > 0) {
+                    voicesLoaded = true;
+                    console.log('Voices loaded immediately:', cachedVoices.length);
+                    resolve();
+                    return;
+                }
+                
+                const onVoicesChanged = () => {
+                    cachedVoices = speechSynthesis.getVoices();
+                    if (cachedVoices.length > 0) {
+                        voicesLoaded = true;
+                        console.log('Voices loaded via event:', cachedVoices.length);
+                        resolve();
+                    }
+                };
+                
+                speechSynthesis.onvoiceschanged = onVoicesChanged;
+                
+                setTimeout(() => {
+                    if (!voicesLoaded) {
+                        cachedVoices = speechSynthesis.getVoices();
+                        voicesLoaded = cachedVoices.length > 0;
+                        console.log('Voices loaded via timeout:', cachedVoices.length);
+                        resolve();
+                    }
+                }, 1000);
+            });
+        }
+
+        function findVoice(lang) {
+            if (cachedVoices.length === 0) {
+                cachedVoices = speechSynthesis.getVoices();
+            }
+            if (lang === 'chinese') {
+                return cachedVoices.find(v => v.lang.startsWith('zh-CN')) || 
+                       cachedVoices.find(v => v.lang.startsWith('zh')) ||
+                       cachedVoices.find(v => v.lang.includes('Chinese'));
+            }
+            return cachedVoices.find(v => v.lang === 'en-US') || 
+                   cachedVoices.find(v => v.lang.startsWith('en')) ||
+                   cachedVoices.find(v => v.lang.includes('English'));
+        }
+
+        function keepSpeechAlive() {
+            if (speechSynthesis.speaking) {
+                speechSynthesis.pause();
+                speechSynthesis.resume();
+            }
+        }
+        setInterval(keepSpeechAlive, 10000);
+
+        function initSpeechOnInteraction() {
+            if (speechInitialized) return;
+            speechInitialized = true;
+            const utterance = new SpeechSynthesisUtterance('');
+            speechSynthesis.speak(utterance);
+            console.log('Speech initialized via user interaction');
+        }
+
+        async function speak(text, lang) {
+            if (!('speechSynthesis' in window)) {
+                console.warn('Speech synthesis not available');
+                return;
+            }
+            
+            try {
+                speechSynthesis.cancel();
+                await new Promise(r => setTimeout(r, 100));
+                speechSynthesis.resume();
+                
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.rate = 0.8;
+                utterance.pitch = 1.1;
+                utterance.lang = lang === 'chinese' ? 'zh-CN' : 'en-US';
+                
+                const voice = findVoice(lang);
+                if (voice) {
+                    utterance.voice = voice;
+                }
+                
+                utterance.onerror = (e) => {
+                    console.warn('Speech error:', e.error);
+                };
+                
+                await new Promise(r => setTimeout(r, 50));
+                speechSynthesis.speak(utterance);
+            } catch (e) {
+                console.warn('Speech failed:', e);
+            }
+        }
+
+        function speakQuestion() {
+            if (!speechInitialized) return;
+            speak(language === 'chinese' ? `${getChineseNumber(minuend)} 减 ${getChineseNumber(subtrahend)}` : `${minuend} minus ${subtrahend}`, language);
+        }
+
+        function speakAnswer() {
+            if (!speechInitialized) return;
+            speak(language === 'chinese' ? `等于 ${getChineseNumber(correctAnswer)}` : `equals ${correctAnswer}`, language);
+        }
+
+        function createBubbles() {
+            const container = document.getElementById('bubbles');
+            const colors = ['#2ecc71','#27ae60','#1abc9c','#16a085','#3498db','#2980b9','#f1c40f','#f39c12'];
+            for (let i = 0; i < 12; i++) {
+                const b = document.createElement('div');
+                b.className = 'bubble';
+                b.style.cssText = `left:${Math.random()*100}%;width:${Math.random()*30+15}px;height:${b.style.width};background:${colors[Math.floor(Math.random()*colors.length)]};animation-delay:${Math.random()*8}s;animation-duration:${Math.random()*4+6}s`;
+                b.style.height = b.style.width;
+                container.appendChild(b);
+            }
+        }
+
+        function getColorClass(row) { return 'color-' + ((row % 10) + 1); }
+        function getBlockSize() { return parseInt(getComputedStyle(document.documentElement).getPropertyValue('--block-size')); }
+
+        function getColumnLayout(num) {
+            if (num === 0) return [];
+            const cols = [];
+            let remaining = num;
+            while (remaining > 0) {
+                cols.push(Math.min(10, remaining));
+                remaining -= 10;
+            }
+            return cols;
+        }
+
+        function createBlock(row, isTop, isGhost = false) {
+            const blockSize = getBlockSize();
+            const block = document.createElement('div');
+            block.className = `block ${getColorClass(row)}`;
+            if (isGhost) block.classList.add('ghost');
+            block.style.bottom = (row * blockSize) + 'px';
+            
+            if (isTop && !isGhost) {
+                block.classList.add('has-face');
+                const mouth = document.createElement('div');
+                mouth.className = 'mouth';
+                block.appendChild(mouth);
+            }
+            return block;
+        }
+
+        // Create minuend blocks - all blocks for the minuend number
+        // Each block has a hidden ghost underneath that shows when the block moves
+        // Mark blocks as "subtracted" based on smart subtraction logic
+        function createMinuendBlocks(container, total, toSubtract) {
+            container.innerHTML = '';
+            if (total === 0) return;
+
+            const layout = getColumnLayout(total);
+            let globalBlockIndex = 0;
+            
+            for (let c = 0; c < layout.length; c++) {
+                const colDiv = document.createElement('div');
+                colDiv.className = 'block-column';
+                colDiv.dataset.col = c;
+                
+                const colHeight = layout[c];
+                for (let r = 0; r < colHeight; r++) {
+                    const isTop = (r === colHeight - 1);
+                    
+                    // Create ghost block first (underneath, hidden initially)
+                    const ghost = createBlock(r, false, true);
+                    ghost.style.opacity = '0';
+                    ghost.dataset.ghostfor = globalBlockIndex;
+                    colDiv.appendChild(ghost);
+                    
+                    // Create the actual block
+                    const block = createBlock(r, isTop);
+                    block.dataset.globalIndex = globalBlockIndex;
+                    block.dataset.col = c;
+                    block.dataset.row = r;
+                    globalBlockIndex++;
+                    colDiv.appendChild(block);
+                }
+                
+                container.appendChild(colDiv);
+            }
+            
+            // Smart subtraction logic:
+            // 1. First, take FULL tens columns (columns with 10 blocks) from the LEFT
+            // 2. Then, for remaining ones to subtract:
+            //    - If minuendOnes >= remaining: take from TOP of the ones column
+            //    - If minuendOnes < remaining (borrowing): take from BOTTOM of next tens column
+            
+            const allBlocks = Array.from(container.querySelectorAll('.block:not(.ghost)'));
+            const subtrahendTens = Math.floor(toSubtract / 10);
+            const subtrahendOnes = toSubtract % 10;
+            const minuendOnes = total % 10;
+            const minuendTens = Math.floor(total / 10);
+            
+            let markedCount = 0;
+            
+            // Step 1: Mark full tens columns (from left, column 0, 1, 2...)
+            for (let c = 0; c < subtrahendTens && c < minuendTens; c++) {
+                const colBlocks = allBlocks.filter(b => parseInt(b.dataset.col) === c);
+                colBlocks.forEach(b => {
+                    b.dataset.subtracted = 'true';
+                    markedCount++;
+                });
+            }
+            
+            // Step 2: Handle remaining ones to subtract
+            if (subtrahendOnes > 0) {
+                const onesColumnIndex = layout.length - 1; // Last column is the ones column
+                const tensColumnsUsed = subtrahendTens;
+                
+                // Check if we need borrowing
+                // Borrowing needed if: minuendOnes < subtrahendOnes AND we have more tens columns available
+                const needsBorrowing = minuendOnes < subtrahendOnes && tensColumnsUsed < minuendTens;
+                
+                if (needsBorrowing) {
+                    // Take from BOTTOM of the next tens column (column at index tensColumnsUsed)
+                    const borrowColumn = tensColumnsUsed;
+                    const colBlocks = allBlocks.filter(b => parseInt(b.dataset.col) === borrowColumn);
+                    colBlocks.sort((a, b) => parseInt(a.dataset.row) - parseInt(b.dataset.row)); // Bottom first
+                    
+                    for (let i = 0; i < subtrahendOnes && i < colBlocks.length; i++) {
+                        colBlocks[i].dataset.subtracted = 'true';
+                        markedCount++;
+                    }
+                } else {
+                    // Take from TOP of the ones column (last column)
+                    const colBlocks = allBlocks.filter(b => parseInt(b.dataset.col) === onesColumnIndex);
+                    colBlocks.sort((a, b) => parseInt(b.dataset.row) - parseInt(a.dataset.row)); // Top first
+                    
+                    for (let i = 0; i < subtrahendOnes && i < colBlocks.length; i++) {
+                        colBlocks[i].dataset.subtracted = 'true';
+                        markedCount++;
+                    }
+                }
+            }
+        }
+
+        // Create result blocks
+        function createResultBlocks(container, count) {
+            container.innerHTML = '';
+            if (count === 0) return;
+
+            const layout = getColumnLayout(count);
+            
+            for (let c = 0; c < layout.length; c++) {
+                const colDiv = document.createElement('div');
+                colDiv.className = 'block-column';
+                
+                const colHeight = layout[c];
+                for (let r = 0; r < colHeight; r++) {
+                    const isTop = (r === colHeight - 1);
+                    const block = createBlock(r, isTop);
+                    colDiv.appendChild(block);
+                }
+                
+                container.appendChild(colDiv);
+            }
+        }
+
+        // Animation 1: When quiz is shown, animate subtrahend blocks from minuend to subtrahend area
+        // Blocks move ONLY HORIZONTALLY - they keep their original row positions
+        function animateSubtrahendSplit() {
+            const blocks1Area = document.getElementById('blocks1');
+            const blocks2Area = document.getElementById('blocks2');
+            
+            blocks2Area.innerHTML = '';
+            
+            const blocks1Rect = blocks1Area.getBoundingClientRect();
+            const blocks2Rect = blocks2Area.getBoundingClientRect();
+            
+            // Calculate horizontal offset from minuend to subtrahend area
+            const horizontalOffset = blocks2Rect.left - blocks1Rect.left;
+            
+            // Get all subtracted blocks
+            const subtractedBlocks = Array.from(blocks1Area.querySelectorAll('.block[data-subtracted="true"]'));
+            subtractedBlocks.sort((a, b) => parseInt(a.dataset.globalIndex) - parseInt(b.dataset.globalIndex));
+            
+            // Move each block HORIZONTALLY ONLY (keep original row position)
+            subtractedBlocks.forEach((block) => {
+                // Show ghost in original position
+                const ghostIndex = block.dataset.globalIndex;
+                const ghost = blocks1Area.querySelector(`.block.ghost[data-ghostfor="${ghostIndex}"]`);
+                if (ghost) ghost.style.opacity = '1';
+                
+                // Animate horizontally only - all blocks move same distance
+                block.style.transform = `translateX(${horizontalOffset}px)`;
+                block.classList.add('subtracted');
+            });
+            
+            // Update faces after animation
+            setTimeout(() => {
+                // Remove all faces from subtracted blocks
+                subtractedBlocks.forEach(block => {
+                    block.classList.remove('has-face');
+                    const mouth = block.querySelector('.mouth');
+                    if (mouth) mouth.remove();
+                });
+                
+                // Add face to top subtracted block (highest row)
+                if (subtractedBlocks.length > 0) {
+                    const sortedByRow = [...subtractedBlocks].sort((a, b) => 
+                        parseInt(b.dataset.row) - parseInt(a.dataset.row)
+                    );
+                    const topBlock = sortedByRow[0];
+                    topBlock.classList.add('has-face');
+                    const mouth = document.createElement('div');
+                    mouth.className = 'mouth';
+                    topBlock.appendChild(mouth);
+                }
+                
+                // Add face to top of remaining blocks in each minuend column
+                blocks1Area.querySelectorAll('.block-column').forEach(col => {
+                    const remainingBlocks = Array.from(col.querySelectorAll('.block:not(.ghost):not([data-subtracted="true"])'));
+                    if (remainingBlocks.length > 0) {
+                        remainingBlocks.forEach(b => {
+                            b.classList.remove('has-face');
+                            const m = b.querySelector('.mouth');
+                            if (m) m.remove();
+                        });
+                        remainingBlocks.sort((a, b) => parseInt(b.dataset.row) - parseInt(a.dataset.row));
+                        const topBlock = remainingBlocks[0];
+                        topBlock.classList.add('has-face');
+                        const mouth = document.createElement('div');
+                        mouth.className = 'mouth';
+                        topBlock.appendChild(mouth);
+                    }
+                });
+            }, 500);
+        }
+
+        // Animation 2: When answer is shown, animate remaining blocks to result area
+        // Blocks move ONLY HORIZONTALLY - they keep their original row positions
+        // All blocks align to the same X position (forming a single column under result)
+        function animateRemainingToResult() {
+            const blocks1Area = document.getElementById('blocks1');
+            const resultArea = document.getElementById('blocksResult');
+            
+            resultArea.innerHTML = '';
+            
+            const resultRect = resultArea.getBoundingClientRect();
+            
+            // Get remaining blocks
+            const remainingBlocks = Array.from(blocks1Area.querySelectorAll('.block:not(.ghost):not([data-subtracted="true"])'));
+            
+            if (remainingBlocks.length === 0) return;
+            
+            // Move each block HORIZONTALLY to align at result area's X position
+            // Each block calculates its own offset to reach the same target X
+            remainingBlocks.forEach((block) => {
+                // Show ghost in original position
+                const ghostIndex = block.dataset.globalIndex;
+                const ghost = blocks1Area.querySelector(`.block.ghost[data-ghostfor="${ghostIndex}"]`);
+                if (ghost) ghost.style.opacity = '1';
+                
+                // Calculate how far this block needs to move to reach result area
+                const blockRect = block.getBoundingClientRect();
+                const moveX = resultRect.left - blockRect.left;
+                
+                // Animate horizontally only - block moves to result X position
+                block.style.transform = `translateX(${moveX}px)`;
+            });
+            
+            // Update faces after animation
+            setTimeout(() => {
+                // Remove all faces
+                remainingBlocks.forEach(block => {
+                    block.classList.remove('has-face');
+                    const mouth = block.querySelector('.mouth');
+                    if (mouth) mouth.remove();
+                });
+                
+                // Add face to the top remaining block (highest row)
+                if (remainingBlocks.length > 0) {
+                    const sortedByRow = [...remainingBlocks].sort((a, b) => 
+                        parseInt(b.dataset.row) - parseInt(a.dataset.row)
+                    );
+                    const topBlock = sortedByRow[0];
+                    topBlock.classList.add('has-face');
+                    const mouth = document.createElement('div');
+                    mouth.className = 'mouth';
+                    topBlock.appendChild(mouth);
+                }
+            }, 500);
+        }
+
+        function generateQuiz() {
+            isAnimating = false;
+            quizState = 'question';
+            currentAnswer = '';
+            
+            document.getElementById('blocks1').innerHTML = '';
+            document.getElementById('blocks2').innerHTML = '';
+            document.getElementById('blocksResult').innerHTML = '';
+            
+            // Determine minimum minuend based on range
+            let minMinuend = 1;
+            if (maxRange === 10) minMinuend = 6;
+            else if (maxRange === 20) minMinuend = 11;
+            else if (maxRange === 100) minMinuend = 21;
+            
+            // Generate numbers: minuend >= subtrahend, result >= 0
+            do {
+                minuend = Math.floor(Math.random() * (maxRange + 1));
+                subtrahend = Math.floor(Math.random() * (minuend + 1));
+                correctAnswer = minuend - subtrahend;
+            } while (minuend < minMinuend);
+            
+            document.getElementById('num1').textContent = minuend;
+            document.getElementById('num2').textContent = subtrahend;
+            document.getElementById('answerInput').value = '';
+            document.getElementById('answerBox').className = 'answer-box';
+            document.getElementById('feedback').textContent = '';
+            document.getElementById('feedback').className = 'feedback';
+            
+            if (showBlocks) {
+                createMinuendBlocks(document.getElementById('blocks1'), minuend, subtrahend);
+                // Animate subtrahend blocks to subtrahend area after a short delay
+                setTimeout(() => {
+                    if (quizState === 'question' && subtrahend > 0) {
+                        animateSubtrahendSplit();
+                    }
+                }, 300);
+            }
+            
+            setTimeout(() => speakQuestion(), 300);
+        }
+
+        function setLanguage(lang) {
+            language = lang;
+            document.querySelectorAll('[data-lang]').forEach(btn => btn.classList.toggle('active', btn.dataset.lang === lang));
+            
+            const translations = {
+                chinese: {
+                    labelLang: '🌐 语言',
+                    labelRange: '🔢 范围',
+                    labelBlocks: '🧱 方块',
+                    labelLabels: '🏷️ 标签',
+                    btnBlocksShow: '显示',
+                    btnBlocksHide: '隐藏',
+                    btnLabelsShow: '显示',
+                    btnLabelsHide: '隐藏',
+                    btnCheck: '✓ 检查',
+                    btnClear: '✕ 清除',
+                    btnNext: '→ 下一题',
+                    navHint: '→ 答案/下一题<br>← 返回',
+                    homeTitle: '首页'
+                },
+                english: {
+                    labelLang: '🌐 Lang',
+                    labelRange: '🔢 Range',
+                    labelBlocks: '🧱 Blocks',
+                    labelLabels: '🏷️ Labels',
+                    btnBlocksShow: 'Show',
+                    btnBlocksHide: 'Hide',
+                    btnLabelsShow: 'Show',
+                    btnLabelsHide: 'Hide',
+                    btnCheck: '✓ Check',
+                    btnClear: '✕ Clear',
+                    btnNext: '→ Next',
+                    navHint: '→ Answer/Next<br>← Back',
+                    homeTitle: 'Home'
+                }
+            };
+            
+            const t = translations[lang];
+            document.getElementById('labelLang').textContent = t.labelLang;
+            document.getElementById('labelRange').textContent = t.labelRange;
+            document.getElementById('labelBlocks').textContent = t.labelBlocks;
+            document.getElementById('labelLabels').textContent = t.labelLabels;
+            document.getElementById('btnBlocksShow').textContent = t.btnBlocksShow;
+            document.getElementById('btnBlocksHide').textContent = t.btnBlocksHide;
+            document.getElementById('btnLabelsShow').textContent = t.btnLabelsShow;
+            document.getElementById('btnLabelsHide').textContent = t.btnLabelsHide;
+            document.getElementById('btnCheck').textContent = t.btnCheck;
+            document.getElementById('btnClear').textContent = t.btnClear;
+            document.getElementById('btnNext').textContent = t.btnNext;
+            document.getElementById('navHint').innerHTML = t.navHint;
+            document.getElementById('homeBtn').title = t.homeTitle;
+            
+            if (quizState === 'question') speakQuestion();
+        }
+
+        function setRange(range) {
+            maxRange = range;
+            document.querySelectorAll('[data-range]').forEach(btn => btn.classList.toggle('active', parseInt(btn.dataset.range) === range));
+            generateQuiz();
+        }
+
+        function setShowBlocks(show) {
+            showBlocks = show;
+            document.querySelectorAll('[data-blocks]').forEach(btn => btn.classList.toggle('active', btn.dataset.blocks === String(show)));
+            
+            document.querySelectorAll('.blocks-area').forEach(area => {
+                area.classList.toggle('hidden', !show);
+            });
+            document.getElementById('blocksWrapper1').classList.toggle('hidden', !show);
+            document.querySelector('.equation-with-blocks').classList.toggle('no-blocks', !show);
+            document.getElementById('labelPanel').classList.toggle('disabled', !show);
+            document.getElementById('numberLabels').classList.toggle('hidden', !show || !showLabels);
+            
+            if (show && !showLabels) {
+                setShowLabels(true);
+            }
+            
+            if (quizState === 'question') {
+                document.getElementById('blocks1').innerHTML = '';
+                document.getElementById('blocks2').innerHTML = '';
+                if (show) {
+                    createMinuendBlocks(document.getElementById('blocks1'), minuend, subtrahend);
+                    setTimeout(() => {
+                        if (quizState === 'question' && subtrahend > 0) {
+                            animateSubtrahendSplit();
+                        }
+                    }, 300);
+                }
+            }
+        }
+
+        function setShowLabels(show) {
+            showLabels = show;
+            document.querySelectorAll('[data-labels]').forEach(btn => btn.classList.toggle('active', btn.dataset.labels === String(show)));
+            document.getElementById('numberLabels').classList.toggle('hidden', !show || !showBlocks);
+        }
+
+        function inputDigit(digit) {
+            initSpeechOnInteraction();
+            if (quizState !== 'question') return;
+            if (currentAnswer.length < 3) {
+                currentAnswer += digit;
+                document.getElementById('answerInput').value = currentAnswer;
+                if (currentAnswer.length === correctAnswer.toString().length) {
+                    setTimeout(() => checkAnswer(), 200);
+                }
+            }
+        }
+
+        function clearAnswer() {
+            currentAnswer = '';
+            document.getElementById('answerInput').value = '';
+            document.getElementById('answerBox').className = 'answer-box';
+            document.getElementById('feedback').textContent = '';
+            document.getElementById('feedback').className = 'feedback';
+        }
+
+        function checkAnswer() {
+            if (quizState !== 'question' || currentAnswer === '' || isAnimating) return;
+            
+            const userAnswer = parseInt(currentAnswer);
+            const answerBox = document.getElementById('answerBox');
+            const feedback = document.getElementById('feedback');
+            
+            if (userAnswer === correctAnswer) {
+                answerBox.className = 'answer-box correct';
+                feedback.textContent = language === 'chinese' ? '🎉 正确！' : '🎉 Correct!';
+                feedback.className = 'feedback correct';
+                quizState = 'answered';
+                if (showBlocks && correctAnswer > 0) {
+                    isAnimating = true;
+                    animateRemainingToResult();
+                    setTimeout(() => { isAnimating = false; }, 600);
+                }
+                setTimeout(() => speakAnswer(), showBlocks ? 500 : 100);
+            } else {
+                answerBox.className = 'answer-box wrong';
+                feedback.textContent = language === 'chinese' ? '❌ 再试一次' : '❌ Try again';
+                feedback.className = 'feedback wrong';
+                setTimeout(() => clearAnswer(), 1000);
+            }
+        }
+
+        function showAnswer() {
+            if (isAnimating) return;
+            if (quizState === 'showing-result') { nextQuiz(); return; }
+            currentAnswer = correctAnswer.toString();
+            document.getElementById('answerInput').value = currentAnswer;
+            document.getElementById('answerBox').className = 'answer-box correct';
+            document.getElementById('feedback').textContent = '';
+            quizState = 'showing-result';
+            if (showBlocks && correctAnswer > 0) {
+                isAnimating = true;
+                animateRemainingToResult();
+                setTimeout(() => { isAnimating = false; }, 600);
+            }
+            speakAnswer();
+        }
+
+        function nextQuiz() { generateQuiz(); }
+        
+        function backToQuiz() {
+            if (quizState === 'question') return;
+            
+            isAnimating = false;
+            quizState = 'question';
+            currentAnswer = '';
+            
+            document.getElementById('blocksResult').innerHTML = '';
+            document.getElementById('answerInput').value = '';
+            document.getElementById('answerBox').className = 'answer-box';
+            document.getElementById('feedback').textContent = '';
+            document.getElementById('feedback').className = 'feedback';
+            
+            if (showBlocks) {
+                createMinuendBlocks(document.getElementById('blocks1'), minuend, subtrahend);
+                document.getElementById('blocks2').innerHTML = '';
+                setTimeout(() => {
+                    if (quizState === 'question' && subtrahend > 0) {
+                        animateSubtrahendSplit();
+                    }
+                }, 300);
+            }
+        }
+
+        document.addEventListener('keydown', e => {
+            initSpeechOnInteraction();
+            if (e.key === 'ArrowRight') { 
+                if (quizState === 'question') showAnswer(); 
+                else if (!isAnimating) nextQuiz(); 
+            }
+            else if (e.key === 'ArrowLeft') { backToQuiz(); }
+            else if (e.key >= '0' && e.key <= '9') { inputDigit(parseInt(e.key)); }
+            else if (e.key === 'Backspace') { currentAnswer = currentAnswer.slice(0,-1); document.getElementById('answerInput').value = currentAnswer; }
+            else if (e.key === 'Enter') { 
+                if (quizState === 'question' && currentAnswer !== '') checkAnswer(); 
+                else if (quizState !== 'question' && !isAnimating) nextQuiz(); 
+            }
+        });
+        
+        document.addEventListener('click', () => initSpeechOnInteraction(), { once: true });
+
+        createBubbles();
+        loadVoices().then(() => {
+            setLanguage(language);
+            setRange(maxRange);
+        });
+    </script>
+</body>
+</html>
+
