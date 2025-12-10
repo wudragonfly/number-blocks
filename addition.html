@@ -275,15 +275,15 @@
     <div class="controls">
         <div class="control-panel">
             <label id="labelLang">🌐 语言</label>
-            <button class="control-btn active" data-lang="chinese" onclick="setLanguage('chinese')">🇨🇳 中文</button>
-            <button class="control-btn" data-lang="english" onclick="setLanguage('english')">🇺🇸 EN</button>
+            <button class="control-btn active" data-lang="chinese" onclick="initSpeechOnInteraction(); setLanguage('chinese')">🇨🇳 中文</button>
+            <button class="control-btn" data-lang="english" onclick="initSpeechOnInteraction(); setLanguage('english')">🇺🇸 EN</button>
         </div>
         <div class="control-panel">
             <label id="labelRange">🔢 范围</label>
-            <button class="control-btn active" data-range="5" onclick="setRange(5)">0~5</button>
-            <button class="control-btn" data-range="10" onclick="setRange(10)">0~10</button>
-            <button class="control-btn" data-range="20" onclick="setRange(20)">0~20</button>
-            <button class="control-btn" data-range="100" onclick="setRange(100)">0~100</button>
+            <button class="control-btn active" data-range="5" onclick="initSpeechOnInteraction(); setRange(5)">0~5</button>
+            <button class="control-btn" data-range="10" onclick="initSpeechOnInteraction(); setRange(10)">0~10</button>
+            <button class="control-btn" data-range="20" onclick="initSpeechOnInteraction(); setRange(20)">0~20</button>
+            <button class="control-btn" data-range="100" onclick="initSpeechOnInteraction(); setRange(100)">0~100</button>
         </div>
         <div class="control-panel">
             <label id="labelBlocks">🧱 方块</label>
@@ -350,9 +350,9 @@
                 <button class="num-btn digit-0" onclick="inputDigit(0)">0</button>
             </div>
             <div class="action-buttons">
-                <button class="action-btn submit" onclick="checkAnswer()" id="btnCheck">✓ 检查</button>
-                <button class="action-btn clear" onclick="clearAnswer()" id="btnClear">✕ 清除</button>
-                <button class="action-btn next" onclick="nextQuiz()" id="btnNext">→ 下一题</button>
+                <button class="action-btn submit" onclick="initSpeechOnInteraction(); checkAnswer()" id="btnCheck">✓ 检查</button>
+                <button class="action-btn clear" onclick="initSpeechOnInteraction(); clearAnswer()" id="btnClear">✕ 清除</button>
+                <button class="action-btn next" onclick="initSpeechOnInteraction(); nextQuiz()" id="btnNext">→ 下一题</button>
             </div>
         </div>
     </div>
@@ -363,9 +363,11 @@
         let num1 = 0, num2 = 0, correctAnswer = 0, currentAnswer = '';
         let language = 'chinese', maxRange = 5, quizState = 'question';
         let cachedVoices = [];
+        let voicesLoaded = false;
         let isAnimating = false;
         let showBlocks = true;
         let showLabels = true;
+        let speechInitialized = false;
 
         const chineseNumbers = { 0:'零',1:'一',2:'二',3:'三',4:'四',5:'五',6:'六',7:'七',8:'八',9:'九',10:'十' };
 
@@ -381,35 +383,124 @@
 
         function loadVoices() {
             return new Promise(resolve => {
+                if (!('speechSynthesis' in window)) {
+                    console.warn('Speech synthesis not supported');
+                    resolve();
+                    return;
+                }
+                
                 cachedVoices = speechSynthesis.getVoices();
-                if (cachedVoices.length > 0) { resolve(); return; }
-                speechSynthesis.onvoiceschanged = () => { cachedVoices = speechSynthesis.getVoices(); resolve(); };
-                setTimeout(resolve, 1000);
+                if (cachedVoices.length > 0) {
+                    voicesLoaded = true;
+                    console.log('Voices loaded immediately:', cachedVoices.length);
+                    resolve();
+                    return;
+                }
+                
+                // Wait for voices to load
+                const onVoicesChanged = () => {
+                    cachedVoices = speechSynthesis.getVoices();
+                    if (cachedVoices.length > 0) {
+                        voicesLoaded = true;
+                        console.log('Voices loaded via event:', cachedVoices.length);
+                        resolve();
+                    }
+                };
+                
+                speechSynthesis.onvoiceschanged = onVoicesChanged;
+                
+                // Fallback timeout
+                setTimeout(() => {
+                    if (!voicesLoaded) {
+                        cachedVoices = speechSynthesis.getVoices();
+                        voicesLoaded = cachedVoices.length > 0;
+                        console.log('Voices loaded via timeout:', cachedVoices.length);
+                        resolve();
+                    }
+                }, 1000);
             });
         }
 
         function findVoice(lang) {
-            if (lang === 'chinese') return cachedVoices.find(v => v.lang.startsWith('zh-CN')) || cachedVoices.find(v => v.lang.startsWith('zh'));
-            return cachedVoices.find(v => v.lang === 'en-US') || cachedVoices.find(v => v.lang.startsWith('en'));
+            if (cachedVoices.length === 0) {
+                cachedVoices = speechSynthesis.getVoices();
+            }
+            if (lang === 'chinese') {
+                return cachedVoices.find(v => v.lang.startsWith('zh-CN')) || 
+                       cachedVoices.find(v => v.lang.startsWith('zh')) ||
+                       cachedVoices.find(v => v.lang.includes('Chinese'));
+            }
+            return cachedVoices.find(v => v.lang === 'en-US') || 
+                   cachedVoices.find(v => v.lang.startsWith('en')) ||
+                   cachedVoices.find(v => v.lang.includes('English'));
+        }
+
+        // Chrome has a bug where speech synthesis stops working after ~15 seconds
+        // This workaround keeps it alive
+        function keepSpeechAlive() {
+            if (speechSynthesis.speaking) {
+                speechSynthesis.pause();
+                speechSynthesis.resume();
+            }
+        }
+        setInterval(keepSpeechAlive, 10000);
+
+        // Initialize speech on first user interaction (required for iOS Safari)
+        function initSpeechOnInteraction() {
+            if (speechInitialized) return;
+            speechInitialized = true;
+            
+            // Speak empty string to unlock audio on iOS
+            const utterance = new SpeechSynthesisUtterance('');
+            speechSynthesis.speak(utterance);
+            console.log('Speech initialized via user interaction');
         }
 
         async function speak(text, lang) {
-            if (!('speechSynthesis' in window)) return;
-            speechSynthesis.cancel();
-            await new Promise(r => setTimeout(r, 100));
-            const utterance = new SpeechSynthesisUtterance(text);
-            utterance.rate = 0.8; utterance.pitch = 1.1;
-            utterance.lang = lang === 'chinese' ? 'zh-CN' : 'en-US';
-            const voice = findVoice(lang);
-            if (voice) utterance.voice = voice;
-            speechSynthesis.speak(utterance);
+            if (!('speechSynthesis' in window)) {
+                console.warn('Speech synthesis not available');
+                return;
+            }
+            
+            try {
+                // Cancel any ongoing speech and wait
+                speechSynthesis.cancel();
+                await new Promise(r => setTimeout(r, 100));
+                
+                // Resume in case it was paused (Chrome bug workaround)
+                speechSynthesis.resume();
+                
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.rate = 0.8;
+                utterance.pitch = 1.1;
+                utterance.lang = lang === 'chinese' ? 'zh-CN' : 'en-US';
+                
+                const voice = findVoice(lang);
+                if (voice) {
+                    utterance.voice = voice;
+                }
+                
+                utterance.onerror = (e) => {
+                    console.warn('Speech error:', e.error);
+                };
+                
+                // Small delay before speaking to ensure clean state
+                await new Promise(r => setTimeout(r, 50));
+                speechSynthesis.speak(utterance);
+            } catch (e) {
+                console.warn('Speech failed:', e);
+            }
         }
 
         function speakQuestion() {
+            // Only speak if user has interacted (browser autoplay policy)
+            if (!speechInitialized) return;
             speak(language === 'chinese' ? `${getChineseNumber(num1)} 加 ${getChineseNumber(num2)}` : `${num1} plus ${num2}`, language);
         }
 
         function speakAnswer() {
+            // Only speak if user has interacted (browser autoplay policy)
+            if (!speechInitialized) return;
             speak(language === 'chinese' ? `等于 ${getChineseNumber(correctAnswer)}` : `equals ${correctAnswer}`, language);
         }
 
@@ -756,6 +847,7 @@
         }
 
         function inputDigit(digit) {
+            initSpeechOnInteraction(); // Initialize speech on user interaction
             if (quizState !== 'question') return;
             if (currentAnswer.length < 3) {
                 currentAnswer += digit;
@@ -931,6 +1023,7 @@
         }
 
         document.addEventListener('keydown', e => {
+            initSpeechOnInteraction(); // Initialize speech on user interaction
             if (e.key === 'ArrowRight') { 
                 if (quizState === 'question') showAnswer(); 
                 else if (!isAnimating) nextQuiz(); 
@@ -943,6 +1036,9 @@
                 else if (quizState !== 'question' && !isAnimating) nextQuiz(); 
             }
         });
+        
+        // Also initialize on any click
+        document.addEventListener('click', () => initSpeechOnInteraction(), { once: true });
 
         createBubbles();
         loadVoices().then(() => {

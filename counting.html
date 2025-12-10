@@ -491,11 +491,11 @@
     <div class="controls">
         <div class="language-selector">
             <label>🌐 Language</label>
-            <button class="language-btn" data-mode="chinese" onclick="setLanguageMode('chinese')">🇨🇳 中文</button>
-            <button class="language-btn" data-mode="english" onclick="setLanguageMode('english')">🇺🇸 English</button>
-            <button class="language-btn active" data-mode="both" onclick="setLanguageMode('both')">🇨🇳🇺🇸 Both</button>
+            <button class="language-btn" data-mode="chinese" onclick="initSpeechOnInteraction(); setLanguageMode('chinese')">🇨🇳 中文</button>
+            <button class="language-btn" data-mode="english" onclick="initSpeechOnInteraction(); setLanguageMode('english')">🇺🇸 English</button>
+            <button class="language-btn active" data-mode="both" onclick="initSpeechOnInteraction(); setLanguageMode('both')">🇨🇳🇺🇸 Both</button>
         </div>
-        <button class="say-number" onclick="sayNumber()">🔊 Say It!</button>
+        <button class="say-number" onclick="initSpeechOnInteraction(); sayNumber()">🔊 Say It!</button>
     </div>
     
     <div class="nav-hint">← → Arrow Keys</div>
@@ -760,6 +760,7 @@
         }
 
         function goToPrev() {
+            initSpeechOnInteraction(); // Initialize speech on user interaction
             if (currentNumber > MIN) {
                 currentNumber--;
                 updateDisplay();
@@ -767,6 +768,7 @@
         }
 
         function goToNext() {
+            initSpeechOnInteraction(); // Initialize speech on user interaction
             if (currentNumber < MAX) {
                 currentNumber++;
                 updateDisplay();
@@ -776,12 +778,20 @@
         // Store voices globally once loaded
         let cachedVoices = [];
         let voicesLoaded = false;
+        let speechInitialized = false;
 
         function loadVoices() {
             return new Promise((resolve) => {
+                if (!('speechSynthesis' in window)) {
+                    console.warn('Speech synthesis not supported');
+                    resolve([]);
+                    return;
+                }
+                
                 cachedVoices = speechSynthesis.getVoices();
                 if (cachedVoices.length > 0) {
                     voicesLoaded = true;
+                    console.log('Voices loaded immediately:', cachedVoices.length);
                     resolve(cachedVoices);
                     return;
                 }
@@ -791,6 +801,7 @@
                     cachedVoices = speechSynthesis.getVoices();
                     if (cachedVoices.length > 0) {
                         voicesLoaded = true;
+                        console.log('Voices loaded via event:', cachedVoices.length);
                         resolve(cachedVoices);
                     }
                 };
@@ -801,11 +812,23 @@
                 setTimeout(() => {
                     if (!voicesLoaded) {
                         cachedVoices = speechSynthesis.getVoices();
-                        voicesLoaded = true;
+                        voicesLoaded = cachedVoices.length > 0;
+                        console.log('Voices loaded via timeout:', cachedVoices.length);
                         resolve(cachedVoices);
                     }
                 }, 1000);
             });
+        }
+
+        // Initialize speech on first user interaction (required for iOS Safari)
+        function initSpeechOnInteraction() {
+            if (speechInitialized || !('speechSynthesis' in window)) return;
+            speechInitialized = true;
+            
+            // Speak empty string to unlock audio on iOS
+            const utterance = new SpeechSynthesisUtterance('');
+            speechSynthesis.speak(utterance);
+            console.log('Speech initialized via user interaction');
         }
 
         function getVoices() {
@@ -866,7 +889,11 @@
         }
 
         async function sayNumber() {
-            if (!('speechSynthesis' in window)) return;
+            // Only speak if user has interacted (browser autoplay policy)
+            if (!('speechSynthesis' in window) || !speechInitialized) {
+                console.log('Speech blocked - waiting for user interaction');
+                return;
+            }
 
             // Cancel any ongoing speech and wait a bit
             speechSynthesis.cancel();
@@ -898,6 +925,7 @@
 
         // Keyboard navigation
         document.addEventListener('keydown', (e) => {
+            initSpeechOnInteraction(); // Initialize speech on user interaction
             if (e.key === 'ArrowLeft') {
                 goToPrev();
             } else if (e.key === 'ArrowRight') {
@@ -907,6 +935,9 @@
                 sayNumber();
             }
         });
+        
+        // Also initialize on any click
+        document.addEventListener('click', () => initSpeechOnInteraction(), { once: true });
 
         // Touch swipe support
         let touchStartX = 0;
