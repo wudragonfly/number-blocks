@@ -654,33 +654,59 @@
 
         // Animation 1: When quiz is shown, animate subtrahend blocks from minuend to subtrahend area
         // Blocks move ONLY HORIZONTALLY - they keep their original row positions
+        // Smart merging: merge into single column if no row conflicts, otherwise preserve column structure
         function animateSubtrahendSplit() {
             const blocks1Area = document.getElementById('blocks1');
             const blocks2Area = document.getElementById('blocks2');
             
             blocks2Area.innerHTML = '';
             
-            const blocks1Rect = blocks1Area.getBoundingClientRect();
             const blocks2Rect = blocks2Area.getBoundingClientRect();
-            
-            // Calculate horizontal offset from minuend to subtrahend area
-            const horizontalOffset = blocks2Rect.left - blocks1Rect.left;
             
             // Get all subtracted blocks
             const subtractedBlocks = Array.from(blocks1Area.querySelectorAll('.block[data-subtracted="true"]'));
             subtractedBlocks.sort((a, b) => parseInt(a.dataset.globalIndex) - parseInt(b.dataset.globalIndex));
             
-            // Move each block HORIZONTALLY ONLY (keep original row position)
+            // Check for row conflicts (multiple blocks with same row from different columns)
+            const rowCounts = {};
             subtractedBlocks.forEach((block) => {
-                // Show ghost in original position
-                const ghostIndex = block.dataset.globalIndex;
-                const ghost = blocks1Area.querySelector(`.block.ghost[data-ghostfor="${ghostIndex}"]`);
-                if (ghost) ghost.style.opacity = '1';
-                
-                // Animate horizontally only - all blocks move same distance
-                block.style.transform = `translateX(${horizontalOffset}px)`;
-                block.classList.add('subtracted');
+                const row = block.dataset.row;
+                rowCounts[row] = (rowCounts[row] || 0) + 1;
             });
+            const hasRowConflict = Object.values(rowCounts).some(count => count > 1);
+            
+            if (hasRowConflict) {
+                // Preserve column structure - find leftmost and use uniform offset
+                let leftmostX = Infinity;
+                subtractedBlocks.forEach((block) => {
+                    const blockRect = block.getBoundingClientRect();
+                    if (blockRect.left < leftmostX) {
+                        leftmostX = blockRect.left;
+                    }
+                });
+                const uniformOffset = blocks2Rect.left - leftmostX;
+                
+                subtractedBlocks.forEach((block) => {
+                    const ghostIndex = block.dataset.globalIndex;
+                    const ghost = blocks1Area.querySelector(`.block.ghost[data-ghostfor="${ghostIndex}"]`);
+                    if (ghost) ghost.style.opacity = '1';
+                    
+                    block.style.transform = `translateX(${uniformOffset}px)`;
+                    block.classList.add('subtracted');
+                });
+            } else {
+                // No conflicts - merge all blocks into single column at subtrahend X
+                subtractedBlocks.forEach((block) => {
+                    const ghostIndex = block.dataset.globalIndex;
+                    const ghost = blocks1Area.querySelector(`.block.ghost[data-ghostfor="${ghostIndex}"]`);
+                    if (ghost) ghost.style.opacity = '1';
+                    
+                    const blockRect = block.getBoundingClientRect();
+                    const moveX = blocks2Rect.left - blockRect.left;
+                    block.style.transform = `translateX(${moveX}px)`;
+                    block.classList.add('subtracted');
+                });
+            }
             
             // Update faces after animation
             setTimeout(() => {
@@ -725,7 +751,7 @@
 
         // Animation 2: When answer is shown, animate remaining blocks to result area
         // Blocks move ONLY HORIZONTALLY - they keep their original row positions
-        // All blocks align to the same X position (forming a single column under result)
+        // Smart merging: merge into single column if no row conflicts, otherwise preserve column structure
         function animateRemainingToResult() {
             const blocks1Area = document.getElementById('blocks1');
             const resultArea = document.getElementById('blocksResult');
@@ -739,21 +765,44 @@
             
             if (remainingBlocks.length === 0) return;
             
-            // Move each block HORIZONTALLY to align at result area's X position
-            // Each block calculates its own offset to reach the same target X
+            // Check for row conflicts (multiple blocks with same row from different columns)
+            const rowCounts = {};
             remainingBlocks.forEach((block) => {
-                // Show ghost in original position
-                const ghostIndex = block.dataset.globalIndex;
-                const ghost = blocks1Area.querySelector(`.block.ghost[data-ghostfor="${ghostIndex}"]`);
-                if (ghost) ghost.style.opacity = '1';
-                
-                // Calculate how far this block needs to move to reach result area
-                const blockRect = block.getBoundingClientRect();
-                const moveX = resultRect.left - blockRect.left;
-                
-                // Animate horizontally only - block moves to result X position
-                block.style.transform = `translateX(${moveX}px)`;
+                const row = block.dataset.row;
+                rowCounts[row] = (rowCounts[row] || 0) + 1;
             });
+            const hasRowConflict = Object.values(rowCounts).some(count => count > 1);
+            
+            if (hasRowConflict) {
+                // Preserve column structure - find leftmost and use uniform offset
+                let leftmostX = Infinity;
+                remainingBlocks.forEach((block) => {
+                    const blockRect = block.getBoundingClientRect();
+                    if (blockRect.left < leftmostX) {
+                        leftmostX = blockRect.left;
+                    }
+                });
+                const uniformOffset = resultRect.left - leftmostX;
+                
+                remainingBlocks.forEach((block) => {
+                    const ghostIndex = block.dataset.globalIndex;
+                    const ghost = blocks1Area.querySelector(`.block.ghost[data-ghostfor="${ghostIndex}"]`);
+                    if (ghost) ghost.style.opacity = '1';
+                    
+                    block.style.transform = `translateX(${uniformOffset}px)`;
+                });
+            } else {
+                // No conflicts - merge all blocks into single column at result X
+                remainingBlocks.forEach((block) => {
+                    const ghostIndex = block.dataset.globalIndex;
+                    const ghost = blocks1Area.querySelector(`.block.ghost[data-ghostfor="${ghostIndex}"]`);
+                    if (ghost) ghost.style.opacity = '1';
+                    
+                    const blockRect = block.getBoundingClientRect();
+                    const moveX = resultRect.left - blockRect.left;
+                    block.style.transform = `translateX(${moveX}px)`;
+                });
+            }
             
             // Update faces after animation
             setTimeout(() => {
