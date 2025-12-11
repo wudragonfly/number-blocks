@@ -654,7 +654,7 @@
 
         // Animation 1: When quiz is shown, animate subtrahend blocks from minuend to subtrahend area
         // Blocks move ONLY HORIZONTALLY - they keep their original row positions
-        // Smart merging: merge into single column if no row conflicts, otherwise preserve column structure
+        // Intelligent merging: merge columns that don't have row conflicts with each other
         function animateSubtrahendSplit() {
             const blocks1Area = document.getElementById('blocks1');
             const blocks2Area = document.getElementById('blocks2');
@@ -662,51 +662,122 @@
             blocks2Area.innerHTML = '';
             
             const blocks2Rect = blocks2Area.getBoundingClientRect();
+            const blockSize = getBlockSize();
+            const colGap = 2;
+            const colWidth = blockSize + colGap;
             
             // Get all subtracted blocks
             const subtractedBlocks = Array.from(blocks1Area.querySelectorAll('.block[data-subtracted="true"]'));
             subtractedBlocks.sort((a, b) => parseInt(a.dataset.globalIndex) - parseInt(b.dataset.globalIndex));
             
-            // Check for row conflicts (multiple blocks with same row from different columns)
-            const rowCounts = {};
-            subtractedBlocks.forEach((block) => {
-                const row = block.dataset.row;
-                rowCounts[row] = (rowCounts[row] || 0) + 1;
+            // Build a map of source column -> rows occupied
+            const sourceColumns = [...new Set(subtractedBlocks.map(b => parseInt(b.dataset.col)))].sort((a, b) => a - b);
+            const colRows = {};
+            sourceColumns.forEach(col => {
+                colRows[col] = new Set();
             });
-            const hasRowConflict = Object.values(rowCounts).some(count => count > 1);
+            subtractedBlocks.forEach(block => {
+                const col = parseInt(block.dataset.col);
+                const row = parseInt(block.dataset.row);
+                colRows[col].add(row);
+            });
             
-            if (hasRowConflict) {
-                // Preserve column structure - find leftmost and use uniform offset
-                let leftmostX = Infinity;
-                subtractedBlocks.forEach((block) => {
-                    const blockRect = block.getBoundingClientRect();
-                    if (blockRect.left < leftmostX) {
-                        leftmostX = blockRect.left;
-                    }
-                });
-                const uniformOffset = blocks2Rect.left - leftmostX;
+            // Greedy algorithm: try to merge columns into target columns
+            const targetColumns = [];
+            
+            // Sort: full columns first, then partial by size descending
+            const sortedCols = [...sourceColumns].sort((a, b) => {
+                const sizeA = colRows[a].size;
+                const sizeB = colRows[b].size;
+                if (sizeA === 10 && sizeB !== 10) return -1;
+                if (sizeB === 10 && sizeA !== 10) return 1;
+                return sizeB - sizeA;
+            });
+            
+            sortedCols.forEach(srcCol => {
+                const srcRows = colRows[srcCol];
+                let merged = false;
                 
-                subtractedBlocks.forEach((block) => {
-                    const ghostIndex = block.dataset.globalIndex;
-                    const ghost = blocks1Area.querySelector(`.block.ghost[data-ghostfor="${ghostIndex}"]`);
-                    if (ghost) ghost.style.opacity = '1';
+                for (const target of targetColumns) {
+                    let hasConflict = false;
+                    for (const row of srcRows) {
+                        if (target.rows.has(row)) {
+                            hasConflict = true;
+                            break;
+                        }
+                    }
                     
-                    block.style.transform = `translateX(${uniformOffset}px)`;
-                    block.classList.add('subtracted');
+                    if (!hasConflict) {
+                        srcRows.forEach(r => target.rows.add(r));
+                        target.sourceColumns.push(srcCol);
+                        merged = true;
+                        break;
+                    }
+                }
+                
+                if (!merged) {
+                    targetColumns.push({
+                        rows: new Set(srcRows),
+                        sourceColumns: [srcCol]
+                    });
+                }
+            });
+            
+            // Build mapping from source column to target column index
+            const colMapping = {};
+            targetColumns.forEach((target, targetIdx) => {
+                target.sourceColumns.forEach(srcCol => {
+                    colMapping[srcCol] = targetIdx;
                 });
-            } else {
-                // No conflicts - merge all blocks into single column at subtrahend X
-                subtractedBlocks.forEach((block) => {
-                    const ghostIndex = block.dataset.globalIndex;
-                    const ghost = blocks1Area.querySelector(`.block.ghost[data-ghostfor="${ghostIndex}"]`);
-                    if (ghost) ghost.style.opacity = '1';
-                    
-                    const blockRect = block.getBoundingClientRect();
-                    const moveX = blocks2Rect.left - blockRect.left;
-                    block.style.transform = `translateX(${moveX}px)`;
-                    block.classList.add('subtracted');
-                });
+            });
+            
+            // Calculate total width of subtrahend
+            const numSubtrahendColumns = targetColumns.length;
+            const subtrahendTotalWidth = numSubtrahendColumns * colWidth;
+            
+            // Get boundaries and result area position
+            const quizArea = document.querySelector('.quiz-area');
+            const quizRect = quizArea.getBoundingClientRect();
+            const answerBox = document.getElementById('answerBox');
+            const answerBoxRect = answerBox.getBoundingClientRect();
+            const maxRightEdge = quizRect.right - 20;
+            const gapBetween = 15;
+            const answerBoxPadding = 15;
+            
+            // Result blocks need to start at answer-box position
+            const resultStartsAt = answerBoxRect.left + answerBoxPadding;
+            
+            // Subtrahend must end before result area (with gap)
+            const subtrahendMustEndBefore = resultStartsAt - gapBetween;
+            
+            // Try to align with blocks2 area, but shift left if would overlap result
+            let subtrahendStartX = blocks2Rect.left;
+            let subtrahendEndX = subtrahendStartX + subtrahendTotalWidth;
+            
+            if (subtrahendEndX > subtrahendMustEndBefore) {
+                // Would overlap result area - shift left
+                subtrahendStartX = subtrahendMustEndBefore - subtrahendTotalWidth;
             }
+            
+            // Don't go past left boundary
+            const minLeftEdge = quizRect.left + 20;
+            subtrahendStartX = Math.max(minLeftEdge, subtrahendStartX);
+            
+            // Animate blocks
+            subtractedBlocks.forEach((block) => {
+                const ghostIndex = block.dataset.globalIndex;
+                const ghost = blocks1Area.querySelector(`.block.ghost[data-ghostfor="${ghostIndex}"]`);
+                if (ghost) ghost.style.opacity = '1';
+                
+                const srcCol = parseInt(block.dataset.col);
+                const targetCol = colMapping[srcCol];
+                const blockRect = block.getBoundingClientRect();
+                const targetX = subtrahendStartX + (targetCol * colWidth);
+                const moveX = targetX - blockRect.left;
+                
+                block.style.transform = `translateX(${moveX}px)`;
+                block.classList.add('subtracted');
+            });
             
             // Update faces after animation
             setTimeout(() => {
@@ -751,58 +822,162 @@
 
         // Animation 2: When answer is shown, animate remaining blocks to result area
         // Blocks move ONLY HORIZONTALLY - they keep their original row positions
-        // Smart merging: merge into single column if no row conflicts, otherwise preserve column structure
+        // Intelligent merging: merge columns that don't have row conflicts with each other
         function animateRemainingToResult() {
             const blocks1Area = document.getElementById('blocks1');
             const resultArea = document.getElementById('blocksResult');
+            const answerBox = document.getElementById('answerBox');
             
             resultArea.innerHTML = '';
             
-            const resultRect = resultArea.getBoundingClientRect();
+            const blockSize = getBlockSize();
+            const colGap = 2;
+            const colWidth = blockSize + colGap;
+            const gapBetween = 15;
+            const answerBoxPadding = 15; // Matches CSS padding of answer-box
+            
+            // Get answer-box position for alignment with result number
+            const answerBoxRect = answerBox.getBoundingClientRect();
+            const resultAlignedX = answerBoxRect.left + answerBoxPadding;
+            
+            // Get quiz area right boundary
+            const quizArea = document.querySelector('.quiz-area');
+            const quizRect = quizArea.getBoundingClientRect();
+            const maxRightEdge = quizRect.right - 20;
+            
+            // Find where subtrahend blocks end (rightmost edge)
+            const subtractedBlocks = Array.from(blocks1Area.querySelectorAll('.block[data-subtracted="true"]'));
+            let subtrahendRightEdge = 0;
+            if (subtractedBlocks.length > 0) {
+                subtractedBlocks.forEach(block => {
+                    const blockRect = block.getBoundingClientRect();
+                    if (blockRect.right > subtrahendRightEdge) subtrahendRightEdge = blockRect.right;
+                });
+            }
             
             // Get remaining blocks
             const remainingBlocks = Array.from(blocks1Area.querySelectorAll('.block:not(.ghost):not([data-subtracted="true"])'));
             
             if (remainingBlocks.length === 0) return;
             
-            // Check for row conflicts (multiple blocks with same row from different columns)
-            const rowCounts = {};
-            remainingBlocks.forEach((block) => {
-                const row = block.dataset.row;
-                rowCounts[row] = (rowCounts[row] || 0) + 1;
+            // Build a map of source column -> rows occupied
+            const sourceColumns = [...new Set(remainingBlocks.map(b => parseInt(b.dataset.col)))].sort((a, b) => a - b);
+            const colRows = {};
+            sourceColumns.forEach(col => {
+                colRows[col] = new Set();
             });
-            const hasRowConflict = Object.values(rowCounts).some(count => count > 1);
+            remainingBlocks.forEach(block => {
+                const col = parseInt(block.dataset.col);
+                const row = parseInt(block.dataset.row);
+                colRows[col].add(row);
+            });
             
-            if (hasRowConflict) {
-                // Preserve column structure - find leftmost and use uniform offset
-                let leftmostX = Infinity;
-                remainingBlocks.forEach((block) => {
-                    const blockRect = block.getBoundingClientRect();
-                    if (blockRect.left < leftmostX) {
-                        leftmostX = blockRect.left;
-                    }
-                });
-                const uniformOffset = resultRect.left - leftmostX;
+            // Greedy algorithm: try to merge columns into target columns
+            // Full columns (10 blocks) get their own target column
+            // Partial columns try to merge with other partial columns if no row conflict
+            const targetColumns = []; // Each entry: { rows: Set, sourceColumns: [] }
+            
+            // Sort source columns: full columns first (they can't merge), then partial by size descending
+            const sortedCols = [...sourceColumns].sort((a, b) => {
+                const sizeA = colRows[a].size;
+                const sizeB = colRows[b].size;
+                if (sizeA === 10 && sizeB !== 10) return -1;
+                if (sizeB === 10 && sizeA !== 10) return 1;
+                return sizeB - sizeA; // Larger partial columns first
+            });
+            
+            sortedCols.forEach(srcCol => {
+                const srcRows = colRows[srcCol];
                 
-                remainingBlocks.forEach((block) => {
-                    const ghostIndex = block.dataset.globalIndex;
-                    const ghost = blocks1Area.querySelector(`.block.ghost[data-ghostfor="${ghostIndex}"]`);
-                    if (ghost) ghost.style.opacity = '1';
+                // Try to find a target column we can merge with
+                let merged = false;
+                for (const target of targetColumns) {
+                    // Check if any row conflicts
+                    let hasConflict = false;
+                    for (const row of srcRows) {
+                        if (target.rows.has(row)) {
+                            hasConflict = true;
+                            break;
+                        }
+                    }
                     
-                    block.style.transform = `translateX(${uniformOffset}px)`;
+                    if (!hasConflict) {
+                        // Merge into this target
+                        srcRows.forEach(r => target.rows.add(r));
+                        target.sourceColumns.push(srcCol);
+                        merged = true;
+                        break;
+                    }
+                }
+                
+                if (!merged) {
+                    // Create new target column
+                    targetColumns.push({
+                        rows: new Set(srcRows),
+                        sourceColumns: [srcCol]
+                    });
+                }
+            });
+            
+            // Build mapping from source column to target column index
+            const colMapping = {};
+            targetColumns.forEach((target, targetIdx) => {
+                target.sourceColumns.forEach(srcCol => {
+                    colMapping[srcCol] = targetIdx;
                 });
+            });
+            
+            // Calculate total width needed for result blocks
+            const numResultColumns = targetColumns.length;
+            const resultTotalWidth = numResultColumns * colWidth;
+            
+            // Determine result starting position
+            let resultStartX;
+            
+            if (subtrahendRightEdge === 0) {
+                // No subtrahend blocks (subtrahend = 0) - align with answer-box
+                resultStartX = resultAlignedX;
             } else {
-                // No conflicts - merge all blocks into single column at result X
-                remainingBlocks.forEach((block) => {
-                    const ghostIndex = block.dataset.globalIndex;
-                    const ghost = blocks1Area.querySelector(`.block.ghost[data-ghostfor="${ghostIndex}"]`);
-                    if (ghost) ghost.style.opacity = '1';
-                    
-                    const blockRect = block.getBoundingClientRect();
-                    const moveX = resultRect.left - blockRect.left;
-                    block.style.transform = `translateX(${moveX}px)`;
-                });
+                // Position after subtrahend, but prefer alignment with answer-box if possible
+                const afterSubtrahend = subtrahendRightEdge + gapBetween;
+                
+                if (afterSubtrahend <= resultAlignedX) {
+                    // There's room - align with answer-box
+                    resultStartX = resultAlignedX;
+                } else {
+                    // Subtrahend extends past answer-box - position after subtrahend
+                    resultStartX = afterSubtrahend;
+                }
             }
+            
+            // Ensure result doesn't overflow right edge - shift left if needed
+            let resultEndX = resultStartX + resultTotalWidth;
+            if (resultEndX > maxRightEdge) {
+                const shiftNeeded = resultEndX - maxRightEdge;
+                const minResultStartX = subtrahendRightEdge > 0 ? subtrahendRightEdge + gapBetween : quizRect.left + 20;
+                resultStartX = Math.max(minResultStartX, resultStartX - shiftNeeded);
+                resultEndX = resultStartX + resultTotalWidth;
+            }
+            
+            // Final safety check - if still overflowing, at least keep rightmost column visible
+            if (resultEndX > maxRightEdge) {
+                resultStartX = maxRightEdge - resultTotalWidth;
+            }
+            
+            // Animate result blocks (subtrahend stays in place)
+            remainingBlocks.forEach((block) => {
+                const ghostIndex = block.dataset.globalIndex;
+                const ghost = blocks1Area.querySelector(`.block.ghost[data-ghostfor="${ghostIndex}"]`);
+                if (ghost) ghost.style.opacity = '1';
+                
+                const srcCol = parseInt(block.dataset.col);
+                const targetCol = colMapping[srcCol];
+                const blockRect = block.getBoundingClientRect();
+                const targetX = resultStartX + (targetCol * colWidth);
+                const moveX = targetX - blockRect.left;
+                
+                block.style.transform = `translateX(${moveX}px)`;
+            });
             
             // Update faces after animation
             setTimeout(() => {
