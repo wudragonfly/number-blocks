@@ -324,12 +324,12 @@
                         <div class="blocks-area" id="blocks1"></div>
                     </div>
                 </div>
-                <div class="operator">−</div>
+                <div class="operator" id="minusSign">−</div>
                 <div class="number-column">
                     <div class="number-display" id="num2">2</div>
                     <div class="blocks-area" id="blocks2"></div>
                 </div>
-                <div class="operator">=</div>
+                <div class="operator" id="equalsSign">=</div>
                 <div class="number-column result">
                     <div class="answer-box" id="answerBox">
                         <input type="text" class="answer-input" id="answerInput" maxlength="3" readonly>
@@ -735,33 +735,87 @@
             const numSubtrahendColumns = targetColumns.length;
             const subtrahendTotalWidth = numSubtrahendColumns * colWidth;
             
-            // Get boundaries and result area position
+            // Get all boundaries and positions
             const quizArea = document.querySelector('.quiz-area');
             const quizRect = quizArea.getBoundingClientRect();
+            const blocks1Rect = blocks1Area.getBoundingClientRect();
             const answerBox = document.getElementById('answerBox');
             const answerBoxRect = answerBox.getBoundingClientRect();
-            const maxRightEdge = quizRect.right - 20;
-            const gapBetween = 15;
+            
+            // Reduce left padding to allow more centering, keep some right padding
+            const minLeftEdge = quizRect.left + 5;
+            const maxRightEdge = quizRect.right - 5;
             const answerBoxPadding = 15;
             
-            // Result blocks need to start at answer-box position
-            const resultStartsAt = answerBoxRect.left + answerBoxPadding;
+            // Estimate result width based on correctAnswer
+            const resultTens = Math.floor(correctAnswer / 10);
+            const resultOnes = correctAnswer % 10;
+            // Full columns + 1 partial if there are ones, minimum 1 column
+            const estimatedResultCols = correctAnswer === 0 ? 0 : Math.max(1, resultTens + (resultOnes > 0 || resultTens === 0 ? 1 : 0));
+            const estimatedResultWidth = estimatedResultCols * colWidth;
             
-            // Subtrahend must end before result area (with gap)
-            const subtrahendMustEndBefore = resultStartsAt - gapBetween;
+            // Ideal positions
+            const idealSubtrahendX = blocks2Rect.left;
+            const idealResultX = answerBoxRect.left + answerBoxPadding;
             
-            // Try to align with blocks2 area, but shift left if would overlap result
-            let subtrahendStartX = blocks2Rect.left;
-            let subtrahendEndX = subtrahendStartX + subtrahendTotalWidth;
+            // Calculate available space: from after minuend to right edge
+            const minuendEnd = blocks1Rect.right;
+            const availableWidth = maxRightEdge - minuendEnd;
             
-            if (subtrahendEndX > subtrahendMustEndBefore) {
-                // Would overlap result area - shift left
-                subtrahendStartX = subtrahendMustEndBefore - subtrahendTotalWidth;
+            // Calculate total needed: subtrahend + gap + result
+            const minGap = 8; // Minimum gap between groups
+            const preferredGap = 15;
+            const totalNeeded = subtrahendTotalWidth + minGap + estimatedResultWidth;
+            
+            let subtrahendStartX;
+            let actualGap;
+            
+            if (subtrahendTotalWidth === 0) {
+                // No subtrahend blocks
+                subtrahendStartX = idealSubtrahendX;
+                actualGap = preferredGap;
+            } else if (totalNeeded <= availableWidth) {
+                // Everything fits - try to use ideal positions
+                const subtrahendEnd = idealSubtrahendX + subtrahendTotalWidth;
+                
+                if (subtrahendEnd + preferredGap <= idealResultX) {
+                    // Ideal positions work - subtrahend aligned with number
+                    subtrahendStartX = idealSubtrahendX;
+                    actualGap = preferredGap;
+                } else {
+                    // Need to shift subtrahend left to make room for result at ideal position
+                    subtrahendStartX = idealResultX - preferredGap - subtrahendTotalWidth;
+                    actualGap = preferredGap;
+                    
+                    // But don't go past minuend
+                    if (subtrahendStartX < minuendEnd + minGap) {
+                        subtrahendStartX = minuendEnd + minGap;
+                        actualGap = minGap;
+                    }
+                }
+            } else {
+                // Tight fit - distribute space evenly
+                const extraSpace = availableWidth - totalNeeded;
+                const padding = Math.max(0, extraSpace / 3); // Divide extra into 3 parts
+                
+                subtrahendStartX = minuendEnd + padding + minGap;
+                actualGap = minGap + padding;
             }
             
-            // Don't go past left boundary
-            const minLeftEdge = quizRect.left + 20;
+            // Final bounds check
             subtrahendStartX = Math.max(minLeftEdge, subtrahendStartX);
+            subtrahendStartX = Math.min(maxRightEdge - subtrahendTotalWidth - minGap - estimatedResultWidth, subtrahendStartX);
+            
+            // Move the subtrahend number and minus sign to align with blocks
+            const num2Display = document.getElementById('num2');
+            const minusSign = document.getElementById('minusSign');
+            const num2Offset = subtrahendStartX - blocks2Rect.left;
+            if (Math.abs(num2Offset) > 1) {
+                num2Display.style.transition = 'transform 0.5s ease';
+                num2Display.style.transform = `translateX(${num2Offset}px)`;
+                minusSign.style.transition = 'transform 0.5s ease';
+                minusSign.style.transform = `translateX(${num2Offset}px)`;
+            }
             
             // Animate blocks
             subtractedBlocks.forEach((block) => {
@@ -931,40 +985,49 @@
             const numResultColumns = targetColumns.length;
             const resultTotalWidth = numResultColumns * colWidth;
             
-            // Determine result starting position
-            let resultStartX;
+            // Minimum gap between subtrahend and result
+            const minGap = 8;
             
-            if (subtrahendRightEdge === 0) {
-                // No subtrahend blocks (subtrahend = 0) - align with answer-box
-                resultStartX = resultAlignedX;
-            } else {
-                // Position after subtrahend, but prefer alignment with answer-box if possible
-                const afterSubtrahend = subtrahendRightEdge + gapBetween;
+            // Determine result starting position
+            // Priority: 1) Align with answer-box if fits, 2) Position after subtrahend if room, 3) Shift left only if overflow
+            let resultStartX = resultAlignedX; // Default: aligned with answer-box
+            
+            // Check if result at aligned position would overlap with subtrahend
+            if (subtrahendRightEdge > 0 && subtrahendRightEdge + minGap > resultAlignedX) {
+                // Subtrahend extends into result area - must position after subtrahend
+                resultStartX = subtrahendRightEdge + minGap;
+            }
+            
+            // Check if result would overflow right edge
+            let resultEndX = resultStartX + resultTotalWidth;
+            if (resultEndX > maxRightEdge) {
+                // Need to shift left to fit
+                resultStartX = maxRightEdge - resultTotalWidth;
                 
-                if (afterSubtrahend <= resultAlignedX) {
-                    // There's room - align with answer-box
-                    resultStartX = resultAlignedX;
-                } else {
-                    // Subtrahend extends past answer-box - position after subtrahend
-                    resultStartX = afterSubtrahend;
+                // But don't overlap with subtrahend
+                const minResultStart = subtrahendRightEdge > 0 ? subtrahendRightEdge + minGap : quizRect.left + 5;
+                if (resultStartX < minResultStart) {
+                    resultStartX = minResultStart;
                 }
             }
             
-            // Ensure result doesn't overflow right edge - shift left if needed
-            let resultEndX = resultStartX + resultTotalWidth;
-            if (resultEndX > maxRightEdge) {
-                const shiftNeeded = resultEndX - maxRightEdge;
-                const minResultStartX = subtrahendRightEdge > 0 ? subtrahendRightEdge + gapBetween : quizRect.left + 20;
-                resultStartX = Math.max(minResultStartX, resultStartX - shiftNeeded);
-                resultEndX = resultStartX + resultTotalWidth;
+            // Only move answer-box and equals sign if result position differs from aligned position
+            const equalsSign = document.getElementById('equalsSign');
+            const answerBoxOffset = resultStartX - resultAlignedX;
+            
+            // Only apply transform if there's a significant offset (prevents unnecessary movement)
+            if (Math.abs(answerBoxOffset) > 2) {
+                answerBox.style.transition = 'transform 0.5s ease';
+                answerBox.style.transform = `translateX(${answerBoxOffset}px)`;
+                equalsSign.style.transition = 'transform 0.5s ease';
+                equalsSign.style.transform = `translateX(${answerBoxOffset}px)`;
+            } else {
+                // Ensure no stale transforms
+                answerBox.style.transform = '';
+                equalsSign.style.transform = '';
             }
             
-            // Final safety check - if still overflowing, at least keep rightmost column visible
-            if (resultEndX > maxRightEdge) {
-                resultStartX = maxRightEdge - resultTotalWidth;
-            }
-            
-            // Animate result blocks (subtrahend stays in place)
+            // Animate result blocks
             remainingBlocks.forEach((block) => {
                 const ghostIndex = block.dataset.globalIndex;
                 const ghost = blocks1Area.querySelector(`.block.ghost[data-ghostfor="${ghostIndex}"]`);
@@ -1010,6 +1073,12 @@
             document.getElementById('blocks1').innerHTML = '';
             document.getElementById('blocks2').innerHTML = '';
             document.getElementById('blocksResult').innerHTML = '';
+            
+            // Reset number and operator positions (they may have been moved to align with blocks)
+            document.getElementById('num2').style.transform = '';
+            document.getElementById('minusSign').style.transform = '';
+            document.getElementById('answerBox').style.transform = '';
+            document.getElementById('equalsSign').style.transform = '';
             
             // Determine minimum minuend based on range
             let minMinuend = 1;
@@ -1215,6 +1284,8 @@
             document.getElementById('blocksResult').innerHTML = '';
             document.getElementById('answerInput').value = '';
             document.getElementById('answerBox').className = 'answer-box';
+            document.getElementById('answerBox').style.transform = '';
+            document.getElementById('equalsSign').style.transform = '';
             document.getElementById('feedback').textContent = '';
             document.getElementById('feedback').className = 'feedback';
             
