@@ -236,7 +236,8 @@ body {
 }
 
 /* Fix for iOS input zoom (font size >= 16px prevents zoom) */
-input, textarea, select {
+/* Exclude .answer-input which needs larger font */
+input:not(.answer-input), textarea, select {
     font-size: 16px !important;
 }
 

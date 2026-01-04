@@ -36,7 +36,7 @@
 
         .nav-hint { position: fixed; top: 10px; right: 10px; background: rgba(255,255,255,0.2); padding: 6px 10px; border-radius: 10px; color: white; font-size: 10px; backdrop-filter: blur(5px); line-height: 1.4; }
 
-        .main-container { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; gap: 10px; width: 100%; max-width: 900px; padding: 10px; }
+        .main-container { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; gap: 10px; width: 100%; max-width: 1200px; padding: 10px; }
 
         .quiz-area { background: rgba(255,255,255,0.15); border-radius: 20px; padding: 15px 10px; backdrop-filter: blur(10px); display: flex; flex-direction: column; align-items: center; gap: 10px; width: 100%; overflow-x: auto; }
 
@@ -67,15 +67,15 @@
         }
 
         .answer-box {
-            min-width: 90px;
-            padding: 0 15px;
+            width: 110px;
+            padding: 0 10px;
             background: rgba(255,255,255,0.2);
             border-radius: 10px;
             border: 3px dashed rgba(255,255,255,0.5);
             height: 50px;
             display: flex;
             align-items: center;
-            justify-content: flex-start;
+            justify-content: center;
         }
         .answer-box.correct { border: 3px solid #2ecc71; background: rgba(46, 204, 113, 0.3); }
         .answer-box.wrong { border: 3px solid #e74c3c; background: rgba(231, 76, 60, 0.3); animation: shake 0.5s; }
@@ -96,7 +96,7 @@
             border: none;
             outline: none;
             width: 90px;
-            text-align: left;
+            text-align: center;
         }
 
         .blocks-wrapper {
