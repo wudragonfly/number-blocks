@@ -300,6 +300,11 @@
             <button class="control-btn active" data-labels="true" onclick="setShowLabels(true)" id="btnLabelsShow">显示</button>
             <button class="control-btn" data-labels="false" onclick="setShowLabels(false)" id="btnLabelsHide">隐藏</button>
         </div>
+        <div class="control-panel">
+            <label id="labelAuto">⏩ 自动</label>
+            <button class="control-btn" data-auto="true" onclick="setAutoAdvance(true)" id="btnAutoOn">开启</button>
+            <button class="control-btn active" data-auto="false" onclick="setAutoAdvance(false)" id="btnAutoOff">关闭</button>
+        </div>
     </div>
 
     <div class="nav-hint" id="navHint">→ 答案/下一题<br>← 返回</div>
@@ -374,6 +379,8 @@
         let showBlocks = true;
         let showLabels = true;
         let speechInitialized = false;
+        let autoAdvance = false;
+        let autoAdvanceTimer = null;
 
         const chineseNumbers = { 0:'零',1:'一',2:'二',3:'三',4:'四',5:'五',6:'六',7:'七',8:'八',9:'九',10:'十' };
 
@@ -1132,7 +1139,10 @@
                     btnClear: '✕ 清除',
                     btnNext: '→ 下一题',
                     navHint: '→ 答案/下一题<br>← 返回',
-                    homeTitle: '首页'
+                    homeTitle: '首页',
+                    labelAuto: '⏩ 自动',
+                    btnAutoOn: '开启',
+                    btnAutoOff: '关闭'
                 },
                 english: {
                     labelLang: '🌐 Lang',
@@ -1147,7 +1157,10 @@
                     btnClear: '✕ Clear',
                     btnNext: '→ Next',
                     navHint: '→ Answer/Next<br>← Back',
-                    homeTitle: 'Home'
+                    homeTitle: 'Home',
+                    labelAuto: '⏩ Auto',
+                    btnAutoOn: 'On',
+                    btnAutoOff: 'Off'
                 }
             };
             
@@ -1165,6 +1178,9 @@
             document.getElementById('btnNext').textContent = t.btnNext;
             document.getElementById('navHint').innerHTML = t.navHint;
             document.getElementById('homeBtn').title = t.homeTitle;
+            document.getElementById('labelAuto').textContent = t.labelAuto;
+            document.getElementById('btnAutoOn').textContent = t.btnAutoOn;
+            document.getElementById('btnAutoOff').textContent = t.btnAutoOff;
             
             if (quizState === 'question') speakQuestion();
         }
@@ -1211,6 +1227,34 @@
             document.getElementById('numberLabels').classList.toggle('hidden', !show || !showBlocks);
         }
 
+        function setAutoAdvance(enabled) {
+            autoAdvance = enabled;
+            document.querySelectorAll('[data-auto]').forEach(btn => btn.classList.toggle('active', btn.dataset.auto === String(enabled)));
+            // Clear any existing timer when toggling
+            if (autoAdvanceTimer) {
+                clearTimeout(autoAdvanceTimer);
+                autoAdvanceTimer = null;
+            }
+        }
+
+        function startAutoAdvanceTimer() {
+            if (autoAdvance && !autoAdvanceTimer) {
+                autoAdvanceTimer = setTimeout(() => {
+                    autoAdvanceTimer = null;
+                    if (quizState !== 'question' && !isAnimating) {
+                        nextQuiz();
+                    }
+                }, 3000);
+            }
+        }
+
+        function clearAutoAdvanceTimer() {
+            if (autoAdvanceTimer) {
+                clearTimeout(autoAdvanceTimer);
+                autoAdvanceTimer = null;
+            }
+        }
+
         function inputDigit(digit) {
             initSpeechOnInteraction();
             if (quizState !== 'question') return;
@@ -1246,7 +1290,9 @@
                 if (showBlocks && correctAnswer > 0) {
                     isAnimating = true;
                     animateRemainingToResult();
-                    setTimeout(() => { isAnimating = false; }, 600);
+                    setTimeout(() => { isAnimating = false; startAutoAdvanceTimer(); }, 600);
+                } else {
+                    startAutoAdvanceTimer();
                 }
                 setTimeout(() => speakAnswer(), showBlocks ? 500 : 100);
             } else {
@@ -1268,15 +1314,18 @@
             if (showBlocks && correctAnswer > 0) {
                 isAnimating = true;
                 animateRemainingToResult();
-                setTimeout(() => { isAnimating = false; }, 600);
+                setTimeout(() => { isAnimating = false; startAutoAdvanceTimer(); }, 600);
+            } else {
+                startAutoAdvanceTimer();
             }
             speakAnswer();
         }
 
-        function nextQuiz() { generateQuiz(); }
+        function nextQuiz() { clearAutoAdvanceTimer(); generateQuiz(); }
         
         function backToQuiz() {
             if (quizState === 'question') return;
+            clearAutoAdvanceTimer();
             
             isAnimating = false;
             quizState = 'question';
