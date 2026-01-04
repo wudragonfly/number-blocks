@@ -388,6 +388,42 @@
         let autoAdvanceTimer = null;
         let audioEnabled = true;
 
+        // Settings persistence
+        const STORAGE_KEY = 'numberblocks_subtraction_settings';
+        
+        function saveSettings() {
+            const settings = {
+                language: language,
+                maxRange: maxRange,
+                showBlocks: showBlocks,
+                showLabels: showLabels,
+                autoAdvance: autoAdvance,
+                audioEnabled: audioEnabled
+            };
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+            } catch (e) {
+                console.warn('Could not save settings:', e);
+            }
+        }
+        
+        function loadSettings() {
+            try {
+                const saved = localStorage.getItem(STORAGE_KEY);
+                if (saved) {
+                    const settings = JSON.parse(saved);
+                    if (settings.language) language = settings.language;
+                    if (settings.maxRange) maxRange = settings.maxRange;
+                    if (typeof settings.showBlocks === 'boolean') showBlocks = settings.showBlocks;
+                    if (typeof settings.showLabels === 'boolean') showLabels = settings.showLabels;
+                    if (typeof settings.autoAdvance === 'boolean') autoAdvance = settings.autoAdvance;
+                    if (typeof settings.audioEnabled === 'boolean') audioEnabled = settings.audioEnabled;
+                }
+            } catch (e) {
+                console.warn('Could not load settings:', e);
+            }
+        }
+
         const chineseNumbers = { 0:'零',1:'一',2:'二',3:'三',4:'四',5:'五',6:'六',7:'七',8:'八',9:'九',10:'十' };
 
         function getChineseNumber(num) {
@@ -510,12 +546,13 @@
             speak(language === 'chinese' ? `等于 ${getChineseNumber(correctAnswer)}` : `equals ${correctAnswer}`, language);
         }
 
-        function setAudioEnabled(enabled) {
+        function setAudioEnabled(enabled, skipSave) {
             audioEnabled = enabled;
             document.querySelectorAll('[data-audio]').forEach(btn => btn.classList.toggle('active', btn.dataset.audio === String(enabled)));
             if (!enabled) {
                 speechSynthesis.cancel();
             }
+            if (!skipSave) saveSettings();
         }
 
         function createBubbles() {
@@ -1135,9 +1172,10 @@
             setTimeout(() => speakQuestion(), 300);
         }
 
-        function setLanguage(lang) {
+        function setLanguage(lang, skipSave) {
             language = lang;
             document.querySelectorAll('[data-lang]').forEach(btn => btn.classList.toggle('active', btn.dataset.lang === lang));
+            if (!skipSave) saveSettings();
             
             const translations = {
                 chinese: {
@@ -1208,13 +1246,14 @@
             if (quizState === 'question') speakQuestion();
         }
 
-        function setRange(range) {
+        function setRange(range, skipSave) {
             maxRange = range;
             document.querySelectorAll('[data-range]').forEach(btn => btn.classList.toggle('active', parseInt(btn.dataset.range) === range));
+            if (!skipSave) saveSettings();
             generateQuiz();
         }
 
-        function setShowBlocks(show) {
+        function setShowBlocks(show, skipSave) {
             showBlocks = show;
             document.querySelectorAll('[data-blocks]').forEach(btn => btn.classList.toggle('active', btn.dataset.blocks === String(show)));
             
@@ -1227,8 +1266,10 @@
             document.getElementById('numberLabels').classList.toggle('hidden', !show || !showLabels);
             
             if (show && !showLabels) {
-                setShowLabels(true);
+                setShowLabels(true, true);
             }
+            
+            if (!skipSave) saveSettings();
             
             if (quizState === 'question') {
                 document.getElementById('blocks1').innerHTML = '';
@@ -1244,13 +1285,14 @@
             }
         }
 
-        function setShowLabels(show) {
+        function setShowLabels(show, skipSave) {
             showLabels = show;
             document.querySelectorAll('[data-labels]').forEach(btn => btn.classList.toggle('active', btn.dataset.labels === String(show)));
             document.getElementById('numberLabels').classList.toggle('hidden', !show || !showBlocks);
+            if (!skipSave) saveSettings();
         }
 
-        function setAutoAdvance(enabled) {
+        function setAutoAdvance(enabled, skipSave) {
             autoAdvance = enabled;
             document.querySelectorAll('[data-auto]').forEach(btn => btn.classList.toggle('active', btn.dataset.auto === String(enabled)));
             // Clear any existing timer when toggling
@@ -1258,6 +1300,7 @@
                 clearTimeout(autoAdvanceTimer);
                 autoAdvanceTimer = null;
             }
+            if (!skipSave) saveSettings();
         }
 
         function startAutoAdvanceTimer() {
@@ -1391,9 +1434,15 @@
         document.addEventListener('click', () => initSpeechOnInteraction(), { once: true });
 
         createBubbles();
+        loadSettings(); // Load saved settings first
         loadVoices().then(() => {
-            setLanguage(language);
-            setRange(maxRange);
+            // Apply all loaded settings (skipSave=true to avoid re-saving)
+            setLanguage(language, true);
+            setShowBlocks(showBlocks, true);
+            setShowLabels(showLabels, true);
+            setAutoAdvance(autoAdvance, true);
+            setAudioEnabled(audioEnabled, true);
+            setRange(maxRange, true); // This also calls generateQuiz()
         });
     </script>
 </body>
