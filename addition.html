@@ -301,6 +301,11 @@
             <button class="control-btn" data-auto="true" onclick="setAutoAdvance(true)" id="btnAutoOn">开启</button>
             <button class="control-btn active" data-auto="false" onclick="setAutoAdvance(false)" id="btnAutoOff">关闭</button>
         </div>
+        <div class="control-panel">
+            <label id="labelAudio">🔊 声音</label>
+            <button class="control-btn active" data-audio="true" onclick="setAudioEnabled(true)" id="btnAudioOn">开启</button>
+            <button class="control-btn" data-audio="false" onclick="setAudioEnabled(false)" id="btnAudioOff">关闭</button>
+        </div>
     </div>
 
     <div class="nav-hint" id="navHint">→ 答案/下一题<br>← 返回</div>
@@ -376,6 +381,7 @@
         let speechInitialized = false;
         let autoAdvance = false;
         let autoAdvanceTimer = null;
+        let audioEnabled = true;
 
         const chineseNumbers = { 0:'零',1:'一',2:'二',3:'三',4:'四',5:'五',6:'六',7:'七',8:'八',9:'九',10:'十' };
 
@@ -501,15 +507,23 @@
         }
 
         function speakQuestion() {
-            // Only speak if user has interacted (browser autoplay policy)
-            if (!speechInitialized) return;
+            // Only speak if user has interacted and audio is enabled
+            if (!speechInitialized || !audioEnabled) return;
             speak(language === 'chinese' ? `${getChineseNumber(num1)} 加 ${getChineseNumber(num2)}` : `${num1} plus ${num2}`, language);
         }
 
         function speakAnswer() {
-            // Only speak if user has interacted (browser autoplay policy)
-            if (!speechInitialized) return;
+            // Only speak if user has interacted and audio is enabled
+            if (!speechInitialized || !audioEnabled) return;
             speak(language === 'chinese' ? `等于 ${getChineseNumber(correctAnswer)}` : `equals ${correctAnswer}`, language);
+        }
+
+        function setAudioEnabled(enabled) {
+            audioEnabled = enabled;
+            document.querySelectorAll('[data-audio]').forEach(btn => btn.classList.toggle('active', btn.dataset.audio === String(enabled)));
+            if (!enabled) {
+                speechSynthesis.cancel();
+            }
         }
 
         function createBubbles() {
@@ -770,7 +784,10 @@
                     homeTitle: '首页',
                     labelAuto: '⏩ 自动',
                     btnAutoOn: '开启',
-                    btnAutoOff: '关闭'
+                    btnAutoOff: '关闭',
+                    labelAudio: '🔊 声音',
+                    btnAudioOn: '开启',
+                    btnAudioOff: '关闭'
                 },
                 english: {
                     labelLang: '🌐 Lang',
@@ -788,7 +805,10 @@
                     homeTitle: 'Home',
                     labelAuto: '⏩ Auto',
                     btnAutoOn: 'On',
-                    btnAutoOff: 'Off'
+                    btnAutoOff: 'Off',
+                    labelAudio: '🔊 Audio',
+                    btnAudioOn: 'On',
+                    btnAudioOff: 'Off'
                 }
             };
             
@@ -809,6 +829,9 @@
             document.getElementById('labelAuto').textContent = t.labelAuto;
             document.getElementById('btnAutoOn').textContent = t.btnAutoOn;
             document.getElementById('btnAutoOff').textContent = t.btnAutoOff;
+            document.getElementById('labelAudio').textContent = t.labelAudio;
+            document.getElementById('btnAudioOn').textContent = t.btnAudioOn;
+            document.getElementById('btnAudioOff').textContent = t.btnAudioOff;
             
             if (quizState === 'question') speakQuestion();
         }
