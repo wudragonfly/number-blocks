@@ -2,14 +2,15 @@
     "name": "Number Blocks",
     "short_name": "NumBlocks",
     "description": "Fun learning games for kids - counting, addition, and subtraction with colorful blocks!",
-    "start_url": "/index.html",
+    "start_url": "./index.html",
+    "scope": "./",
     "display": "standalone",
     "orientation": "any",
     "background_color": "#667eea",
     "theme_color": "#667eea",
     "icons": [
         {
-            "src": "icons/icon.svg",
+            "src": "./icons/icon.svg",
             "sizes": "any",
             "type": "image/svg+xml",
             "purpose": "any"
