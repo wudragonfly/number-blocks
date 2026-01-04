@@ -215,6 +215,38 @@
         .feedback.correct { color: #2ecc71; }
         .feedback.wrong { color: #e74c3c; }
 
+        .custom-input {
+            font-size: clamp(28px, 5vw, 40px);
+            color: white;
+            text-shadow: 2px 2px 0 #2ecc71, 3px 3px 0 rgba(0,0,0,0.2);
+            font-family: 'Nunito', sans-serif;
+            font-weight: 900;
+            background: rgba(255,255,255,0.2);
+            border: 3px dashed rgba(255,255,255,0.5);
+            border-radius: 10px;
+            width: 80px;
+            height: 50px;
+            text-align: center;
+            outline: none;
+            -moz-appearance: textfield;
+        }
+        .custom-input::-webkit-outer-spin-button,
+        .custom-input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        .custom-input:focus {
+            border-color: rgba(255,255,255,0.8);
+            background: rgba(255,255,255,0.3);
+        }
+
+        .start-custom {
+            background: linear-gradient(145deg, #9b59b6, #8e44ad);
+            font-size: 16px;
+            padding: 12px 30px;
+            margin-top: 10px;
+        }
+
         .input-area { display: flex; flex-direction: column; align-items: center; gap: 8px; }
         .number-pad { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
         .num-btn {
@@ -310,6 +342,11 @@
             <button class="control-btn active" data-audio="true" onclick="setAudioEnabled(true)" id="btnAudioOn">开启</button>
             <button class="control-btn" data-audio="false" onclick="setAudioEnabled(false)" id="btnAudioOff">关闭</button>
         </div>
+        <div class="control-panel">
+            <label id="labelMode">📝 模式</label>
+            <button class="control-btn active" data-mode="random" onclick="setQuizMode('random')" id="btnModeRandom">随机</button>
+            <button class="control-btn" data-mode="custom" onclick="setQuizMode('custom')" id="btnModeCustom">自定义</button>
+        </div>
     </div>
 
     <div class="nav-hint" id="navHint">→ 答案/下一题<br>← 返回</div>
@@ -319,6 +356,7 @@
             <div class="equation-with-blocks">
                 <div class="number-column">
                     <div class="number-display" id="num1">5</div>
+                    <input type="number" class="custom-input" id="customNum1" min="0" max="100" value="5" style="display:none;" onkeydown="handleCustomInputKey(event, 1)">
                     <div class="blocks-wrapper" id="blocksWrapper1">
                         <div class="number-labels" id="numberLabels">
                             <div class="number-label">1</div>
@@ -338,6 +376,7 @@
                 <div class="operator" id="minusSign">−</div>
                 <div class="number-column">
                     <div class="number-display" id="num2">2</div>
+                    <input type="number" class="custom-input" id="customNum2" min="0" max="100" value="2" style="display:none;" onkeydown="handleCustomInputKey(event, 2)">
                     <div class="blocks-area" id="blocks2"></div>
                 </div>
                 <div class="operator" id="equalsSign">=</div>
@@ -349,6 +388,7 @@
                 </div>
             </div>
             <div class="feedback" id="feedback"></div>
+            <button class="action-btn start-custom" id="btnStartCustom" onclick="startCustomQuiz()" style="display:none;">▶ 开始</button>
         </div>
 
         <div class="input-area">
@@ -387,6 +427,7 @@
         let autoAdvance = false;
         let autoAdvanceTimer = null;
         let audioEnabled = true;
+        let quizMode = 'random'; // 'random' or 'custom'
 
         // Settings persistence
         const STORAGE_KEY = 'numberblocks_subtraction_settings';
@@ -553,6 +594,118 @@
                 speechSynthesis.cancel();
             }
             if (!skipSave) saveSettings();
+        }
+
+        function setQuizMode(mode) {
+            quizMode = mode;
+            document.querySelectorAll('[data-mode]').forEach(btn => btn.classList.toggle('active', btn.dataset.mode === mode));
+            
+            const num1Display = document.getElementById('num1');
+            const num2Display = document.getElementById('num2');
+            const customNum1 = document.getElementById('customNum1');
+            const customNum2 = document.getElementById('customNum2');
+            const btnStartCustom = document.getElementById('btnStartCustom');
+            const rangePanel = document.querySelector('[data-range]').parentElement;
+            
+            if (mode === 'custom') {
+                // Show custom inputs, hide number displays
+                num1Display.style.display = 'none';
+                num2Display.style.display = 'none';
+                customNum1.style.display = 'block';
+                customNum2.style.display = 'block';
+                btnStartCustom.style.display = 'block';
+                rangePanel.style.opacity = '0.5';
+                rangePanel.style.pointerEvents = 'none';
+                
+                // Clear the quiz area
+                document.getElementById('blocks1').innerHTML = '';
+                document.getElementById('blocks2').innerHTML = '';
+                document.getElementById('blocksResult').innerHTML = '';
+                document.getElementById('answerInput').value = '';
+                document.getElementById('answerBox').className = 'answer-box';
+                document.getElementById('feedback').textContent = '';
+                document.getElementById('num2').style.transform = '';
+                document.getElementById('minusSign').style.transform = '';
+                document.getElementById('answerBox').style.transform = '';
+                document.getElementById('equalsSign').style.transform = '';
+                quizState = 'custom-input';
+                
+                // Auto-focus first input and select its content
+                setTimeout(() => {
+                    customNum1.focus();
+                    customNum1.select();
+                }, 100);
+            } else {
+                // Show number displays, hide custom inputs
+                num1Display.style.display = 'block';
+                num2Display.style.display = 'block';
+                customNum1.style.display = 'none';
+                customNum2.style.display = 'none';
+                btnStartCustom.style.display = 'none';
+                rangePanel.style.opacity = '1';
+                rangePanel.style.pointerEvents = 'auto';
+                
+                generateQuiz();
+            }
+        }
+
+        function handleCustomInputKey(event, inputNum) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                startCustomQuiz();
+            } else if (event.key === 'Tab' && inputNum === 1) {
+                event.preventDefault();
+                const customNum2 = document.getElementById('customNum2');
+                customNum2.focus();
+                customNum2.select();
+            }
+        }
+
+        function startCustomQuiz() {
+            const customNum1Val = parseInt(document.getElementById('customNum1').value) || 0;
+            const customNum2Val = parseInt(document.getElementById('customNum2').value) || 0;
+            
+            // Clamp values to 0-100 and ensure num1 >= num2
+            minuend = Math.max(0, Math.min(100, customNum1Val));
+            subtrahend = Math.max(0, Math.min(minuend, customNum2Val));
+            correctAnswer = minuend - subtrahend;
+            
+            // Update displays
+            document.getElementById('num1').textContent = minuend;
+            document.getElementById('num2').textContent = subtrahend;
+            document.getElementById('num1').style.display = 'block';
+            document.getElementById('num2').style.display = 'block';
+            document.getElementById('customNum1').style.display = 'none';
+            document.getElementById('customNum2').style.display = 'none';
+            document.getElementById('btnStartCustom').style.display = 'none';
+            
+            // Reset transforms
+            document.getElementById('num2').style.transform = '';
+            document.getElementById('minusSign').style.transform = '';
+            document.getElementById('answerBox').style.transform = '';
+            document.getElementById('equalsSign').style.transform = '';
+            
+            // Reset answer area
+            currentAnswer = '';
+            document.getElementById('answerInput').value = '';
+            document.getElementById('answerBox').className = 'answer-box';
+            document.getElementById('feedback').textContent = '';
+            document.getElementById('feedback').className = 'feedback';
+            document.getElementById('blocksResult').innerHTML = '';
+            
+            quizState = 'question';
+            isAnimating = false;
+            
+            if (showBlocks) {
+                createMinuendBlocks(document.getElementById('blocks1'), minuend, subtrahend);
+                setTimeout(() => {
+                    if (quizState === 'question' && subtrahend > 0) {
+                        animateSubtrahendSplit();
+                    }
+                }, 300);
+            }
+            
+            setTimeout(() => speakQuestion(), 300);
         }
 
         function createBubbles() {
@@ -1197,7 +1350,11 @@
                     btnAutoOff: '关闭',
                     labelAudio: '🔊 声音',
                     btnAudioOn: '开启',
-                    btnAudioOff: '关闭'
+                    btnAudioOff: '关闭',
+                    labelMode: '📝 模式',
+                    btnModeRandom: '随机',
+                    btnModeCustom: '自定义',
+                    btnStartCustom: '▶ 开始'
                 },
                 english: {
                     labelLang: '🌐 Lang',
@@ -1218,7 +1375,11 @@
                     btnAutoOff: 'Off',
                     labelAudio: '🔊 Audio',
                     btnAudioOn: 'On',
-                    btnAudioOff: 'Off'
+                    btnAudioOff: 'Off',
+                    labelMode: '📝 Mode',
+                    btnModeRandom: 'Random',
+                    btnModeCustom: 'Custom',
+                    btnStartCustom: '▶ Start'
                 }
             };
             
@@ -1242,6 +1403,10 @@
             document.getElementById('labelAudio').textContent = t.labelAudio;
             document.getElementById('btnAudioOn').textContent = t.btnAudioOn;
             document.getElementById('btnAudioOff').textContent = t.btnAudioOff;
+            document.getElementById('labelMode').textContent = t.labelMode;
+            document.getElementById('btnModeRandom').textContent = t.btnModeRandom;
+            document.getElementById('btnModeCustom').textContent = t.btnModeCustom;
+            document.getElementById('btnStartCustom').textContent = t.btnStartCustom;
             
             if (quizState === 'question') speakQuestion();
         }
@@ -1387,7 +1552,36 @@
             speakAnswer();
         }
 
-        function nextQuiz() { clearAutoAdvanceTimer(); generateQuiz(); }
+        function nextQuiz() { 
+            clearAutoAdvanceTimer(); 
+            if (quizMode === 'custom') {
+                // In custom mode, go back to input state
+                document.getElementById('num1').style.display = 'none';
+                document.getElementById('num2').style.display = 'none';
+                document.getElementById('customNum1').style.display = 'block';
+                document.getElementById('customNum2').style.display = 'block';
+                document.getElementById('btnStartCustom').style.display = 'block';
+                document.getElementById('blocks1').innerHTML = '';
+                document.getElementById('blocks2').innerHTML = '';
+                document.getElementById('blocksResult').innerHTML = '';
+                document.getElementById('answerInput').value = '';
+                document.getElementById('answerBox').className = 'answer-box';
+                document.getElementById('feedback').textContent = '';
+                document.getElementById('num2').style.transform = '';
+                document.getElementById('minusSign').style.transform = '';
+                document.getElementById('answerBox').style.transform = '';
+                document.getElementById('equalsSign').style.transform = '';
+                quizState = 'custom-input';
+                
+                // Auto-focus first input and select its content
+                setTimeout(() => {
+                    document.getElementById('customNum1').focus();
+                    document.getElementById('customNum1').select();
+                }, 100);
+            } else {
+                generateQuiz(); 
+            }
+        }
         
         function backToQuiz() {
             if (quizState === 'question') return;
