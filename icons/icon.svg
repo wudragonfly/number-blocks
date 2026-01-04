@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#667eea"/>
+      <stop offset="50%" style="stop-color:#764ba2"/>
+      <stop offset="100%" style="stop-color:#f093fb"/>
+    </linearGradient>
+    <linearGradient id="block1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#e74c3c"/>
+      <stop offset="100%" style="stop-color:#c0392b"/>
+    </linearGradient>
+    <linearGradient id="block2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#e67e22"/>
+      <stop offset="100%" style="stop-color:#d35400"/>
+    </linearGradient>
+    <linearGradient id="block3" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#f1c40f"/>
+      <stop offset="100%" style="stop-color:#f39c12"/>
+    </linearGradient>
+    <linearGradient id="block4" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#2ecc71"/>
+      <stop offset="100%" style="stop-color:#27ae60"/>
+    </linearGradient>
+    <linearGradient id="block5" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#3498db"/>
+      <stop offset="100%" style="stop-color:#2980b9"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="512" height="512" rx="100" fill="url(#bg)"/>
+  
+  <!-- Block 1 (Red) -->
+  <rect x="80" y="320" width="70" height="70" rx="10" fill="url(#block1)"/>
+  
+  <!-- Block 2 (Orange) - Stack of 2 -->
+  <rect x="160" y="320" width="70" height="70" rx="10" fill="url(#block2)"/>
+  <rect x="160" y="245" width="70" height="70" rx="10" fill="url(#block2)"/>
+  
+  <!-- Block 3 (Yellow) - Stack of 3 -->
+  <rect x="240" y="320" width="70" height="70" rx="10" fill="url(#block3)"/>
+  <rect x="240" y="245" width="70" height="70" rx="10" fill="url(#block3)"/>
+  <rect x="240" y="170" width="70" height="70" rx="10" fill="url(#block3)"/>
+  
+  <!-- Block 4 (Green) - Stack of 2 -->
+  <rect x="320" y="320" width="70" height="70" rx="10" fill="url(#block4)"/>
+  <rect x="320" y="245" width="70" height="70" rx="10" fill="url(#block4)"/>
+  
+  <!-- Block 5 (Blue) -->
+  <rect x="400" y="320" width="70" height="70" rx="10" fill="url(#block5)"/>
+  
+  <!-- Numbers on top blocks -->
+  <text x="115" y="368" font-family="Arial, sans-serif" font-size="40" font-weight="bold" fill="white" text-anchor="middle">1</text>
+  <text x="195" y="293" font-family="Arial, sans-serif" font-size="40" font-weight="bold" fill="white" text-anchor="middle">2</text>
+  <text x="275" y="218" font-family="Arial, sans-serif" font-size="40" font-weight="bold" fill="white" text-anchor="middle">3</text>
+  <text x="355" y="293" font-family="Arial, sans-serif" font-size="40" font-weight="bold" fill="white" text-anchor="middle">4</text>
+  <text x="435" y="368" font-family="Arial, sans-serif" font-size="40" font-weight="bold" fill="white" text-anchor="middle">5</text>
+  
+  <!-- Face on top block (3) -->
+  <circle cx="260" cy="190" r="8" fill="white"/>
+  <circle cx="290" cy="190" r="8" fill="white"/>
+  <circle cx="262" cy="192" r="3" fill="#333"/>
+  <circle cx="292" cy="192" r="3" fill="#333"/>
+  <path d="M 260 210 Q 275 225 290 210" stroke="#c0392b" stroke-width="4" fill="none"/>
+</svg>
+
