@@ -303,6 +303,11 @@
             <button class="control-btn active" data-labels="true" onclick="setShowLabels(true)" id="btnLabelsOn">显示</button>
             <button class="control-btn" data-labels="false" onclick="setShowLabels(false)" id="btnLabelsOff">隐藏</button>
         </div>
+        <div class="control-panel">
+            <label id="labelNumbers">🔢 数字</label>
+            <button class="control-btn" data-numbers="true" onclick="setShowNumbers(true)" id="btnNumbersOn">显示</button>
+            <button class="control-btn active" data-numbers="false" onclick="setShowNumbers(false)" id="btnNumbersOff">隐藏</button>
+        </div>
     </div>
 
     <div class="nav-hint" id="navHint">→↓ 下一个<br>←↑ 上一个</div>
@@ -370,6 +375,7 @@
         let audioEnabled = true;
         let autoMode = false;
         let showLabels = true;
+        let showNumbers = false;
         let autoTimer = null;
         let speechInitialized = false;
         let cachedVoices = [];
@@ -386,6 +392,7 @@
                 audioEnabled: audioEnabled,
                 autoMode: autoMode,
                 showLabels: showLabels,
+                showNumbers: showNumbers,
                 currentMultiplier: currentMultiplier
             };
             try {
@@ -405,6 +412,7 @@
                     if (typeof settings.audioEnabled === 'boolean') audioEnabled = settings.audioEnabled;
                     if (typeof settings.autoMode === 'boolean') autoMode = settings.autoMode;
                     if (typeof settings.showLabels === 'boolean') showLabels = settings.showLabels;
+                    if (typeof settings.showNumbers === 'boolean') showNumbers = settings.showNumbers;
                     if (settings.currentMultiplier >= 1 && settings.currentMultiplier <= 10) {
                         currentMultiplier = settings.currentMultiplier;
                     }
@@ -700,22 +708,29 @@
                     // Determine if this cell should be a block
                     let isBlock = false;
                     let position = 0; // 1-10 for blocks
+                    let sequenceNum = 0; // The counting number (1 to position*m)
                     
                     if (direction === 'column') {
                         // Column mode: m rows × 10 columns
                         // Each column represents position (1-10)
                         // Show m blocks per column (rows 0 to m-1)
+                        // Numbering: top to bottom within column, then left to right
                         if (row < m) {
                             isBlock = true;
                             position = col + 1;
+                            // Sequence: (position-1)*m + row + 1
+                            sequenceNum = (position - 1) * m + row + 1;
                         }
                     } else {
                         // Row mode: 10 rows × m columns  
                         // Each row represents position (1-10)
                         // Show m blocks per row (cols 0 to m-1)
+                        // Numbering: left to right within row, then top to bottom
                         if (col < m) {
                             isBlock = true;
                             position = row + 1;
+                            // Sequence: (position-1)*m + col + 1
+                            sequenceNum = (position - 1) * m + col + 1;
                         }
                     }
                     
@@ -724,6 +739,7 @@
                         const colorClass = `color-${position}`;
                         cell.classList.add('block', colorClass);
                         cell.dataset.position = position;
+                        cell.dataset.seq = sequenceNum;
                         
                         // All blocks start inactive
                         if (currentPosition === 0) {
@@ -732,6 +748,10 @@
                             cell.classList.add('active');
                             if (position === currentPosition) {
                                 cell.classList.add('current-highlight');
+                            }
+                            // Show sequence number if enabled and block is active
+                            if (showNumbers) {
+                                cell.textContent = sequenceNum;
                             }
                         } else {
                             cell.classList.add('inactive');
@@ -782,8 +802,10 @@
             
             cells.forEach(cell => {
                 const position = parseInt(cell.dataset.position);
+                const sequenceNum = cell.dataset.seq;
                 
                 cell.classList.remove('inactive', 'active', 'current-highlight');
+                cell.textContent = ''; // Clear number
                 
                 if (currentPosition === 0) {
                     cell.classList.add('inactive');
@@ -791,6 +813,10 @@
                     cell.classList.add('active');
                     if (position === currentPosition) {
                         cell.classList.add('current-highlight');
+                    }
+                    // Show sequence number if enabled
+                    if (showNumbers) {
+                        cell.textContent = sequenceNum;
                     }
                 } else {
                     cell.classList.add('inactive');
@@ -868,6 +894,7 @@
                     labelAuto: '⏩ 自动',
                     labelAudio: '🔊 声音',
                     labelLabels: '🏷️ 标签',
+                    labelNumbers: '🔢 数字',
                     btnDirectionColumn: '列模式',
                     btnDirectionRow: '行模式',
                     btnAutoOn: '开启',
@@ -876,6 +903,8 @@
                     btnAudioOff: '关闭',
                     btnLabelsOn: '显示',
                     btnLabelsOff: '隐藏',
+                    btnNumbersOn: '显示',
+                    btnNumbersOff: '隐藏',
                     homeTitle: '首页',
                     navHint: '→↓ 下一个<br>←↑ 上一个'
                 },
@@ -885,6 +914,7 @@
                     labelAuto: '⏩ Auto',
                     labelAudio: '🔊 Audio',
                     labelLabels: '🏷️ Labels',
+                    labelNumbers: '🔢 Numbers',
                     btnDirectionColumn: 'Column',
                     btnDirectionRow: 'Row',
                     btnAutoOn: 'On',
@@ -893,6 +923,8 @@
                     btnAudioOff: 'Off',
                     btnLabelsOn: 'Show',
                     btnLabelsOff: 'Hide',
+                    btnNumbersOn: 'Show',
+                    btnNumbersOff: 'Hide',
                     homeTitle: 'Home',
                     navHint: '→↓ Next<br>←↑ Prev'
                 }
@@ -904,6 +936,7 @@
             document.getElementById('labelAuto').textContent = t.labelAuto;
             document.getElementById('labelAudio').textContent = t.labelAudio;
             document.getElementById('labelLabels').textContent = t.labelLabels;
+            document.getElementById('labelNumbers').textContent = t.labelNumbers;
             document.getElementById('btnDirectionColumn').textContent = t.btnDirectionColumn;
             document.getElementById('btnDirectionRow').textContent = t.btnDirectionRow;
             document.getElementById('btnAutoOn').textContent = t.btnAutoOn;
@@ -912,6 +945,8 @@
             document.getElementById('btnAudioOff').textContent = t.btnAudioOff;
             document.getElementById('btnLabelsOn').textContent = t.btnLabelsOn;
             document.getElementById('btnLabelsOff').textContent = t.btnLabelsOff;
+            document.getElementById('btnNumbersOn').textContent = t.btnNumbersOn;
+            document.getElementById('btnNumbersOff').textContent = t.btnNumbersOff;
             document.getElementById('homeBtn').title = t.homeTitle;
             document.getElementById('navHint').innerHTML = t.navHint;
             
@@ -968,6 +1003,16 @@
             if (!skipSave) saveSettings();
         }
 
+        function setShowNumbers(show, skipSave) {
+            showNumbers = show;
+            document.querySelectorAll('[data-numbers]').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.numbers === String(show));
+            });
+            // Re-render numbers on grid
+            updateGridHighlighting();
+            if (!skipSave) saveSettings();
+        }
+
         // Keyboard navigation
         document.addEventListener('keydown', e => {
             initSpeechOnInteraction();
@@ -997,6 +1042,7 @@
             setAutoMode(autoMode, true);
             setAudioEnabled(audioEnabled, true);
             setShowLabels(showLabels, true);
+            setShowNumbers(showNumbers, true);
             selectTab(currentMultiplier);
         });
     </script>
