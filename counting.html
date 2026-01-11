@@ -14,7 +14,7 @@
         }
 
         :root {
-            --block-size: 50px;
+            --block-size: 40px;
         }
 
         body {
@@ -79,11 +79,11 @@
         }
 
         .number-display {
-            font-size: clamp(60px, 12vw, 140px);
+            font-size: clamp(48px, 10vw, 100px);
             color: white;
             text-shadow: 
-                3px 3px 0 #ff6b6b,
-                6px 6px 0 rgba(0,0,0,0.2);
+                2px 2px 0 #ff6b6b,
+                4px 4px 0 rgba(0,0,0,0.2);
             animation: bounce-in 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
             font-family: 'Nunito', sans-serif;
             font-weight: 900;
@@ -91,7 +91,7 @@
         }
 
         .number-text {
-            font-size: clamp(24px, 5vw, 48px);
+            font-size: clamp(20px, 4vw, 36px);
             color: white;
             text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
             animation: fade-in 0.5s ease-out 0.3s backwards;
@@ -150,13 +150,13 @@
         }
 
         .column-top-label {
-            font-size: 20px;
+            font-size: 16px;
             color: white;
             text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
             font-family: 'Nunito', sans-serif;
             font-weight: 700;
-            padding: 5px 0;
-            min-height: 30px;
+            padding: 4px 0;
+            min-height: 24px;
         }
 
         .blocks-with-labels {
@@ -381,70 +381,51 @@
 
         .controls {
             position: fixed;
-            top: 20px;
-            left: 20px;
+            top: 10px;
+            left: 10px;
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            gap: 6px;
             z-index: 10;
         }
 
-        .language-selector {
+        .control-panel {
             display: flex;
             flex-direction: column;
-            gap: 5px;
+            gap: 3px;
             background: rgba(255,255,255,0.2);
-            padding: 15px;
-            border-radius: 20px;
+            padding: 8px;
+            border-radius: 10px;
             backdrop-filter: blur(10px);
         }
 
-        .language-selector label {
+        .control-panel label {
             color: white;
-            font-size: 12px;
-            margin-bottom: 5px;
+            font-size: 9px;
             text-transform: uppercase;
             letter-spacing: 1px;
         }
 
-        .language-btn {
+        .control-btn {
             background: rgba(255,255,255,0.3);
             border: 2px solid transparent;
-            padding: 10px 15px;
-            border-radius: 15px;
+            padding: 5px 8px;
+            border-radius: 8px;
             font-family: 'Fredoka One', cursive;
-            font-size: 14px;
+            font-size: 11px;
             cursor: pointer;
             color: white;
             transition: all 0.3s;
-            text-align: left;
         }
 
-        .language-btn:hover {
+        .control-btn:hover {
             background: rgba(255,255,255,0.4);
         }
 
-        .language-btn.active {
+        .control-btn.active {
             background: linear-gradient(145deg, #ff9a9e, #fecfef);
             color: #c0392b;
             border-color: white;
-        }
-
-        .say-number {
-            background: linear-gradient(145deg, #ff9a9e, #fecfef);
-            border: none;
-            padding: 15px 25px;
-            border-radius: 30px;
-            font-family: 'Fredoka One', cursive;
-            font-size: 18px;
-            cursor: pointer;
-            color: #c0392b;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-            transition: all 0.3s;
-        }
-
-        .say-number:hover {
-            transform: scale(1.1);
         }
 
         @media (max-width: 768px) {
@@ -460,19 +441,15 @@
                 overflow-x: auto;
             }
             .controls {
-                top: 10px;
-                left: 10px;
+                top: 5px;
+                left: 5px;
             }
-            .language-selector {
-                padding: 10px;
+            .control-panel {
+                padding: 5px;
             }
-            .language-btn {
-                padding: 8px 12px;
-                font-size: 12px;
-            }
-            .say-number {
-                padding: 10px 18px;
-                font-size: 14px;
+            .control-btn {
+                padding: 4px 6px;
+                font-size: 10px;
             }
             .number-text {
                 font-size: clamp(18px, 4vw, 32px);
@@ -490,13 +467,17 @@
     <div class="bubbles" id="bubbles"></div>
 
     <div class="controls">
-        <div class="language-selector">
+        <div class="control-panel">
             <label>🌐 Language</label>
-            <button class="language-btn" data-mode="chinese" onclick="initSpeechOnInteraction(); setLanguageMode('chinese')">🇨🇳 中文</button>
-            <button class="language-btn" data-mode="english" onclick="initSpeechOnInteraction(); setLanguageMode('english')">🇺🇸 English</button>
-            <button class="language-btn active" data-mode="both" onclick="initSpeechOnInteraction(); setLanguageMode('both')">🇨🇳🇺🇸 Both</button>
+            <button class="control-btn" data-mode="chinese" onclick="initSpeechOnInteraction(); setLanguageMode('chinese')">🇨🇳 中文</button>
+            <button class="control-btn" data-mode="english" onclick="initSpeechOnInteraction(); setLanguageMode('english')">🇺🇸 EN</button>
+            <button class="control-btn active" data-mode="both" onclick="initSpeechOnInteraction(); setLanguageMode('both')">🇨🇳🇺🇸 Both</button>
         </div>
-        <button class="say-number" onclick="initSpeechOnInteraction(); sayNumber()">🔊 Say It!</button>
+        <div class="control-panel">
+            <label>🔊 Audio</label>
+            <button class="control-btn active" data-audio="true" onclick="initSpeechOnInteraction(); setAudioEnabled(true)" id="btnAudioOn">On</button>
+            <button class="control-btn" data-audio="false" onclick="setAudioEnabled(false)" id="btnAudioOff">Off</button>
+        </div>
     </div>
     
     <div class="nav-hint">← → Arrow Keys</div>
@@ -521,6 +502,7 @@
         const MIN = 1;
         const MAX = 100;
         let languageMode = 'both'; // 'chinese', 'english', or 'both'
+        let audioEnabled = true;
 
         // Chinese number words
         const chineseNumbers = {
@@ -567,15 +549,22 @@
             languageMode = mode;
             
             // Update button styles
-            document.querySelectorAll('.language-btn').forEach(btn => {
-                btn.classList.remove('active');
-                if (btn.dataset.mode === mode) {
-                    btn.classList.add('active');
-                }
+            document.querySelectorAll('[data-mode]').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.mode === mode);
             });
             
             // Update display
             updateNumberText();
+        }
+
+        function setAudioEnabled(enabled) {
+            audioEnabled = enabled;
+            document.querySelectorAll('[data-audio]').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.audio === String(enabled));
+            });
+            if (!enabled) {
+                speechSynthesis.cancel();
+            }
         }
 
         function updateNumberText() {
@@ -627,7 +616,7 @@
             container.innerHTML = '';
 
             // Keep block size constant
-            document.documentElement.style.setProperty('--block-size', '50px');
+            document.documentElement.style.setProperty('--block-size', '40px');
 
             let blockIndex = 0;
 
@@ -890,9 +879,8 @@
         }
 
         async function sayNumber() {
-            // Only speak if user has interacted (browser autoplay policy)
-            if (!('speechSynthesis' in window) || !speechInitialized) {
-                console.log('Speech blocked - waiting for user interaction');
+            // Only speak if user has interacted and audio is enabled
+            if (!('speechSynthesis' in window) || !speechInitialized || !audioEnabled) {
                 return;
             }
 
