@@ -478,6 +478,11 @@
             <button class="control-btn active" data-audio="true" onclick="initSpeechOnInteraction(); setAudioEnabled(true)" id="btnAudioOn">On</button>
             <button class="control-btn" data-audio="false" onclick="setAudioEnabled(false)" id="btnAudioOff">Off</button>
         </div>
+        <div class="control-panel">
+            <label>⏩ Auto</label>
+            <button class="control-btn" data-auto="true" onclick="initSpeechOnInteraction(); setAutoMode(true)" id="btnAutoOn">On</button>
+            <button class="control-btn active" data-auto="false" onclick="setAutoMode(false)" id="btnAutoOff">Off</button>
+        </div>
     </div>
     
     <div class="nav-hint">← → Arrow Keys</div>
@@ -503,6 +508,8 @@
         const MAX = 100;
         let languageMode = 'both'; // 'chinese', 'english', or 'both'
         let audioEnabled = true;
+        let autoMode = false;
+        let autoTimer = null;
 
         // Chinese number words
         const chineseNumbers = {
@@ -564,7 +571,37 @@
             });
             if (!enabled) {
                 speechSynthesis.cancel();
+                clearAutoTimer();
             }
+        }
+
+        function setAutoMode(enabled) {
+            autoMode = enabled;
+            document.querySelectorAll('[data-auto]').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.auto === String(enabled));
+            });
+            if (!enabled) {
+                clearAutoTimer();
+            }
+        }
+
+        function clearAutoTimer() {
+            if (autoTimer) {
+                clearTimeout(autoTimer);
+                autoTimer = null;
+            }
+        }
+
+        function startAutoTimer() {
+            if (!autoMode || currentNumber >= MAX) return;
+            clearAutoTimer();
+            autoTimer = setTimeout(() => {
+                autoTimer = null;
+                if (currentNumber < MAX) {
+                    currentNumber++;
+                    updateDisplay(true);
+                }
+            }, 300);
         }
 
         function updateNumberText() {
@@ -751,6 +788,7 @@
 
         function goToPrev() {
             initSpeechOnInteraction(); // Initialize speech on user interaction
+            clearAutoTimer();
             if (currentNumber > MIN) {
                 currentNumber--;
                 updateDisplay();
@@ -759,6 +797,7 @@
 
         function goToNext() {
             initSpeechOnInteraction(); // Initialize speech on user interaction
+            clearAutoTimer();
             if (currentNumber < MAX) {
                 currentNumber++;
                 updateDisplay();
@@ -881,6 +920,10 @@
         async function sayNumber() {
             // Only speak if user has interacted and audio is enabled
             if (!('speechSynthesis' in window) || !speechInitialized || !audioEnabled) {
+                // If audio disabled but auto mode on, still advance
+                if (autoMode && currentNumber < MAX) {
+                    startAutoTimer();
+                }
                 return;
             }
 
@@ -907,6 +950,9 @@
                     await new Promise(r => setTimeout(r, 300));
                     await speakText(currentNumber.toString(), 'en-US', englishVoice);
                 }
+                
+                // Start auto timer after speech completes
+                startAutoTimer();
             } catch (e) {
                 console.warn('Speech failed:', e);
             }
