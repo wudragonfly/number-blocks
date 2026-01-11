@@ -381,6 +381,7 @@
         let cachedVoices = [];
         let voicesLoaded = false;
         let isSpeaking = false;
+        let isNavigating = false;
 
         // Settings persistence
         const STORAGE_KEY = 'numberblocks_multiplication_settings';
@@ -681,6 +682,7 @@
             initSpeechOnInteraction();
             currentMultiplier = num;
             currentPosition = 0;
+            isNavigating = false;
             saveSettings();
             
             // Update tab buttons
@@ -858,12 +860,20 @@
         }
 
         async function navigateNext() {
+            if (isNavigating) return;
+            isNavigating = true;
+            
             initSpeechOnInteraction();
             clearAutoTimer();
             
-            if (currentPosition >= 10) return;
+            if (currentPosition >= 10) {
+                isNavigating = false;
+                return;
+            }
             
             currentPosition++;
+            const positionForThisCall = currentPosition;
+            
             updateGridHighlighting();
             updateEquationDisplay();
             updateProgressIndicator();
@@ -872,16 +882,26 @@
             // Speak the equation and then start auto timer
             await speakEquation(currentMultiplier, currentPosition);
             
-            if (autoMode && currentPosition < 10) {
+            isNavigating = false;
+            
+            // Only start auto timer if we're still at the same position
+            // (prevents race conditions if position changed during speech)
+            if (autoMode && currentPosition < 10 && currentPosition === positionForThisCall) {
                 startAutoTimer();
             }
         }
 
         async function navigatePrev() {
+            if (isNavigating) return;
+            isNavigating = true;
+            
             initSpeechOnInteraction();
             clearAutoTimer();
             
-            if (currentPosition <= 0) return;
+            if (currentPosition <= 0) {
+                isNavigating = false;
+                return;
+            }
             
             currentPosition--;
             updateGridHighlighting();
@@ -893,6 +913,8 @@
                 // Speak the equation of current position
                 await speakEquation(currentMultiplier, currentPosition);
             }
+            
+            isNavigating = false;
         }
 
         function setLanguage(lang, skipSave) {
