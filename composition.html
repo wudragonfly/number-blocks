@@ -1,0 +1,1251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Number Blocks - Composition</title>
+    <script src="loader.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@700;900&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root { --block-size: 36px; --grid-gap: 2px; --label-size: 20px; }
+        html, body { height: 100%; overflow: hidden; }
+
+        body {
+            font-family: 'Fredoka One', cursive;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+        }
+
+        /* Animated stars background */
+        .stars { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; overflow: hidden; z-index: 0; }
+        .star { position: absolute; background: white; border-radius: 50%; animation: twinkle 2s infinite ease-in-out; }
+        @keyframes twinkle {
+            0%, 100% { opacity: 0.3; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.2); }
+        }
+
+        .controls { position: fixed; top: 10px; left: 10px; display: flex; flex-direction: column; gap: 6px; z-index: 10; }
+        .control-panel { display: flex; flex-direction: column; gap: 3px; background: rgba(255,255,255,0.15); padding: 8px; border-radius: 10px; backdrop-filter: blur(10px); }
+        .control-panel label { color: white; font-size: 9px; text-transform: uppercase; letter-spacing: 1px; }
+        .control-btn { background: rgba(255,255,255,0.25); border: 2px solid transparent; padding: 5px 8px; border-radius: 8px; font-family: 'Fredoka One', cursive; font-size: 11px; cursor: pointer; color: white; transition: all 0.3s; }
+        .control-btn:hover { background: rgba(255,255,255,0.35); }
+        .control-btn.active { background: linear-gradient(145deg, #ff9a9e, #fecfef); color: #c0392b; border-color: white; }
+
+        .main-container { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; gap: 15px; width: 100%; max-width: 900px; padding: 10px; }
+
+        /* Tabs */
+        .tabs { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
+        .tab-btn {
+            width: 44px; height: 44px;
+            border-radius: 12px; border: 3px solid transparent;
+            font-size: 20px;
+            font-family: 'Nunito', sans-serif;
+            font-weight: 900;
+            cursor: pointer;
+            transition: all 0.3s;
+            color: white;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+        .tab-btn:hover { transform: scale(1.1); }
+        .tab-btn.active { border-color: white; transform: scale(1.15); box-shadow: 0 6px 20px rgba(0,0,0,0.4); }
+        .tab-btn.tab-1 { background: linear-gradient(145deg, #e74c3c, #c0392b); }
+        .tab-btn.tab-2 { background: linear-gradient(145deg, #e67e22, #d35400); }
+        .tab-btn.tab-3 { background: linear-gradient(145deg, #f1c40f, #f39c12); }
+        .tab-btn.tab-4 { background: linear-gradient(145deg, #2ecc71, #27ae60); }
+        .tab-btn.tab-5 { background: linear-gradient(145deg, #3498db, #2980b9); }
+        .tab-btn.tab-6 { background: linear-gradient(145deg, #9b59b6, #8e44ad); }
+        .tab-btn.tab-7 { background: linear-gradient(145deg, #1abc9c, #16a085); }
+        .tab-btn.tab-8 { background: linear-gradient(145deg, #e91e63, #c2185b); }
+        .tab-btn.tab-9 { background: linear-gradient(145deg, #00bcd4, #0097a7); }
+        .tab-btn.tab-10 { background: linear-gradient(145deg, #ff5722, #e64a19); }
+
+        /* Content area with grid and diagram */
+        .content-area {
+            display: flex;
+            align-items: flex-start;
+            gap: 20px;
+        }
+
+        /* Grid Container with labels */
+        .grid-wrapper {
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Top labels (1-10) */
+        .top-labels {
+            display: flex;
+            margin-left: 15px;
+            padding-left: 4px;
+            margin-bottom: 2px;
+        }
+        .top-labels.hidden { visibility: hidden; }
+        .top-label {
+            width: var(--block-size);
+            height: var(--label-size);
+            margin-right: var(--grid-gap);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Nunito', sans-serif;
+            font-weight: 700;
+            font-size: calc(var(--label-size) * 0.7);
+            color: rgba(255,255,255,0.6);
+        }
+
+        .grid-container {
+            background: rgba(255,255,255,0.1);
+            border-radius: 16px;
+            padding: 15px;
+            backdrop-filter: blur(10px);
+        }
+
+        .composition-grid {
+            display: grid;
+            grid-template-columns: repeat(10, var(--block-size));
+            grid-template-rows: repeat(12, var(--block-size));
+            gap: var(--grid-gap);
+            background: rgba(0,0,0,0.2);
+            padding: 4px;
+            border-radius: 8px;
+        }
+
+        .grid-cell {
+            width: var(--block-size);
+            height: var(--block-size);
+            border-radius: 4px;
+            background: rgba(255,255,255,0.05);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Nunito', sans-serif;
+            font-weight: 900;
+            font-size: calc(var(--block-size) * 0.5);
+            color: rgba(255,255,255,0.9);
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+            transition: all 0.2s;
+            cursor: default;
+        }
+
+        .grid-cell.block {
+            box-shadow: 
+                inset -2px -2px 0 rgba(0,0,0,0.2),
+                inset 2px 2px 0 rgba(255,255,255,0.3),
+                2px 2px 5px rgba(0,0,0,0.3);
+        }
+
+        .grid-cell.white-block {
+            background: linear-gradient(145deg, #ecf0f1, #bdc3c7);
+            color: #2c3e50;
+        }
+
+        .grid-cell.red-block {
+            background: linear-gradient(145deg, #e74c3c, #c0392b);
+        }
+
+        .grid-cell.blue-block {
+            background: linear-gradient(145deg, #3498db, #2980b9);
+        }
+
+        .grid-cell.hidden-number {
+            color: transparent;
+        }
+
+        .grid-cell.hidden-number::after {
+            content: '?';
+            color: rgba(255,255,255,0.7);
+        }
+
+        /* Row hover and click effect */
+        .composition-row {
+            display: contents;
+        }
+
+        .composition-row.clickable .grid-cell.block {
+            cursor: pointer;
+        }
+
+        .composition-row.clickable:hover .grid-cell.block {
+            transform: scale(1.05);
+            z-index: 5;
+        }
+
+        .composition-row.selected .grid-cell.block {
+            box-shadow: 
+                inset -2px -2px 0 rgba(0,0,0,0.2),
+                inset 2px 2px 0 rgba(255,255,255,0.3),
+                2px 2px 5px rgba(0,0,0,0.3),
+                0 0 15px rgba(255,255,255,0.5);
+        }
+
+        /* Composition Diagram */
+        .diagram-container {
+            background: rgba(255,255,255,0.1);
+            border-radius: 16px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-width: 140px;
+            min-height: 180px;
+        }
+        .diagram-container.hidden { display: none; }
+
+        .diagram {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .diagram-block {
+            width: 50px;
+            height: 50px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Nunito', sans-serif;
+            font-weight: 900;
+            font-size: 24px;
+            color: white;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+            box-shadow: 
+                inset -3px -3px 0 rgba(0,0,0,0.2),
+                inset 3px 3px 0 rgba(255,255,255,0.3),
+                3px 3px 8px rgba(0,0,0,0.3);
+        }
+
+        .diagram-block.white {
+            background: linear-gradient(145deg, #ecf0f1, #bdc3c7);
+            color: #2c3e50;
+        }
+
+        .diagram-block.red {
+            background: linear-gradient(145deg, #e74c3c, #c0392b);
+        }
+
+        .diagram-block.blue {
+            background: linear-gradient(145deg, #3498db, #2980b9);
+        }
+
+        .diagram-block.hidden-num {
+            color: transparent;
+        }
+        .diagram-block.hidden-num::after {
+            content: '?';
+            color: rgba(255,255,255,0.7);
+            font-size: 24px;
+        }
+
+        .diagram-connectors {
+            display: flex;
+            justify-content: center;
+            gap: 0;
+            font-size: 28px;
+            color: rgba(255,255,255,0.7);
+            font-weight: bold;
+            line-height: 1;
+            margin: -5px 0;
+        }
+
+        .diagram-slash {
+            transform: scaleY(1.2);
+        }
+
+        .diagram-branch {
+            display: flex;
+            align-items: flex-start;
+            gap: 30px;
+        }
+
+        /* Game mode answer selection */
+        .answer-area {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            min-height: 80px;
+        }
+
+        .answer-area.hidden { visibility: hidden; }
+
+        .answer-prompt {
+            font-size: 16px;
+            color: white;
+            text-shadow: 2px 2px 0 rgba(0,0,0,0.2);
+        }
+
+        .answer-choices {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .choice-btn {
+            width: 50px; height: 50px;
+            border-radius: 12px;
+            border: 3px solid rgba(255,255,255,0.3);
+            font-size: 22px;
+            font-family: 'Nunito', sans-serif;
+            font-weight: 900;
+            cursor: pointer;
+            transition: all 0.3s;
+            color: white;
+            background: linear-gradient(145deg, #3498db, #2980b9);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+
+        .choice-btn:hover { transform: scale(1.1); border-color: white; }
+        .choice-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .choice-btn.correct { background: linear-gradient(145deg, #2ecc71, #27ae60); animation: pulse 0.5s; }
+        .choice-btn.wrong { background: linear-gradient(145deg, #e74c3c, #c0392b); animation: shake 0.5s; }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-5px); }
+            40%, 80% { transform: translateX(5px); }
+        }
+
+        .feedback {
+            font-size: 18px;
+            color: white;
+            text-align: center;
+            min-height: 26px;
+        }
+        .feedback.correct { color: #2ecc71; }
+        .feedback.wrong { color: #e74c3c; }
+
+        .home-btn {
+            position: fixed; bottom: 15px; left: 15px;
+            width: 45px; height: 45px;
+            border-radius: 50%; border: none;
+            font-size: 22px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            background: linear-gradient(145deg, #667eea, #764ba2);
+            color: white; text-decoration: none;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            transition: all 0.3s; z-index: 10;
+        }
+        .home-btn:hover { transform: scale(1.15); }
+
+        /* Responsive */
+        @media (max-height: 700px) {
+            :root { --block-size: 28px; --label-size: 16px; }
+            .tab-btn { width: 38px; height: 38px; font-size: 16px; }
+            .diagram-block { width: 40px; height: 40px; font-size: 20px; }
+        }
+        @media (max-width: 700px) {
+            .content-area { flex-direction: column; align-items: center; }
+            .diagram-container { min-height: auto; padding: 15px; }
+        }
+        @media (max-width: 450px) {
+            :root { --block-size: 26px; --label-size: 14px; }
+            .tab-btn { width: 34px; height: 34px; font-size: 14px; }
+            .controls { top: 5px; left: 5px; }
+            .control-panel { padding: 5px; }
+            .control-btn { padding: 4px 6px; font-size: 10px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="stars" id="stars"></div>
+
+    <div class="controls">
+        <div class="control-panel">
+            <label id="labelLang">🌐 语言</label>
+            <button class="control-btn active" data-lang="chinese" onclick="initSpeechOnInteraction(); setLanguage('chinese')">🇨🇳 中文</button>
+            <button class="control-btn" data-lang="english" onclick="initSpeechOnInteraction(); setLanguage('english')">🇺🇸 EN</button>
+        </div>
+        <div class="control-panel">
+            <label id="labelMode">🎮 模式</label>
+            <button class="control-btn active" data-mode="learn" onclick="setGameMode('learn')" id="btnModeLearn">学习</button>
+            <button class="control-btn" data-mode="game" onclick="setGameMode('game')" id="btnModeGame">游戏</button>
+        </div>
+        <div class="control-panel" id="autoModePanel" style="display: none;">
+            <label id="labelAutoMode">⏩ 游戏</label>
+            <button class="control-btn" data-automode="auto" onclick="setAutoMode('auto')" id="btnAutoModeAuto">自动</button>
+            <button class="control-btn active" data-automode="manual" onclick="setAutoMode('manual')" id="btnAutoModeManual">手动</button>
+        </div>
+        <div class="control-panel">
+            <label id="labelLabels">🏷️ 标签</label>
+            <button class="control-btn active" data-labels="true" onclick="setShowLabels(true)" id="btnLabelsOn">显示</button>
+            <button class="control-btn" data-labels="false" onclick="setShowLabels(false)" id="btnLabelsOff">隐藏</button>
+        </div>
+        <div class="control-panel">
+            <label id="labelAudio">🔊 声音</label>
+            <button class="control-btn active" data-audio="true" onclick="setAudioEnabled(true)" id="btnAudioOn">开启</button>
+            <button class="control-btn" data-audio="false" onclick="setAudioEnabled(false)" id="btnAudioOff">关闭</button>
+        </div>
+    </div>
+
+    <div class="main-container">
+        <div class="tabs">
+            <button class="tab-btn tab-1" data-num="1" onclick="selectTab(1)">1</button>
+            <button class="tab-btn tab-2" data-num="2" onclick="selectTab(2)">2</button>
+            <button class="tab-btn tab-3" data-num="3" onclick="selectTab(3)">3</button>
+            <button class="tab-btn tab-4" data-num="4" onclick="selectTab(4)">4</button>
+            <button class="tab-btn tab-5" data-num="5" onclick="selectTab(5)">5</button>
+            <button class="tab-btn tab-6" data-num="6" onclick="selectTab(6)">6</button>
+            <button class="tab-btn tab-7" data-num="7" onclick="selectTab(7)">7</button>
+            <button class="tab-btn tab-8" data-num="8" onclick="selectTab(8)">8</button>
+            <button class="tab-btn tab-9" data-num="9" onclick="selectTab(9)">9</button>
+            <button class="tab-btn tab-10" data-num="10" onclick="selectTab(10)">10</button>
+        </div>
+
+        <div class="content-area">
+            <div class="grid-wrapper">
+                <div class="top-labels" id="topLabels">
+                    <div class="top-label">1</div>
+                    <div class="top-label">2</div>
+                    <div class="top-label">3</div>
+                    <div class="top-label">4</div>
+                    <div class="top-label">5</div>
+                    <div class="top-label">6</div>
+                    <div class="top-label">7</div>
+                    <div class="top-label">8</div>
+                    <div class="top-label">9</div>
+                    <div class="top-label">10</div>
+                </div>
+                <div class="grid-container">
+                    <div class="composition-grid" id="grid"></div>
+                </div>
+            </div>
+
+            <div class="diagram-container hidden" id="diagramContainer">
+                <div class="diagram" id="diagram"></div>
+            </div>
+        </div>
+
+        <div class="answer-area hidden" id="answerArea">
+            <div class="answer-prompt" id="answerPrompt">选择蓝色方块的数字</div>
+            <div class="answer-choices" id="answerChoices"></div>
+            <div class="feedback" id="feedback"></div>
+        </div>
+    </div>
+
+    <a href="index.html" class="home-btn" id="homeBtn" title="首页">🏠</a>
+
+    <script>
+        let currentNumber = 6;
+        let language = 'chinese';
+        let gameMode = 'learn'; // 'learn' or 'game'
+        let autoMode = 'manual'; // 'auto' or 'manual'
+        let audioEnabled = true;
+        let showLabels = true;
+        let speechInitialized = false;
+        let cachedVoices = [];
+        let voicesLoaded = false;
+        
+        // Game mode state
+        let currentQuestionRow = -1;
+        let correctBlueNumber = 0;
+        let selectedRedNum = 0;
+        let autoAdvanceTimer = null;
+        
+        // Track which rows have been answered correctly in game mode
+        let answeredRows = new Set();
+
+        // Settings persistence
+        const STORAGE_KEY = 'numberblocks_composition_settings';
+
+        function saveSettings() {
+            const settings = {
+                language: language,
+                gameMode: gameMode,
+                autoMode: autoMode,
+                audioEnabled: audioEnabled,
+                showLabels: showLabels,
+                currentNumber: currentNumber
+            };
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+            } catch (e) {
+                console.warn('Could not save settings:', e);
+            }
+        }
+
+        function loadSettings() {
+            try {
+                const saved = localStorage.getItem(STORAGE_KEY);
+                if (saved) {
+                    const settings = JSON.parse(saved);
+                    if (settings.language) language = settings.language;
+                    if (settings.gameMode) gameMode = settings.gameMode;
+                    if (settings.autoMode) autoMode = settings.autoMode;
+                    if (typeof settings.audioEnabled === 'boolean') audioEnabled = settings.audioEnabled;
+                    if (typeof settings.showLabels === 'boolean') showLabels = settings.showLabels;
+                    if (settings.currentNumber >= 1 && settings.currentNumber <= 10) currentNumber = settings.currentNumber;
+                }
+            } catch (e) {
+                console.warn('Could not load settings:', e);
+            }
+        }
+
+        const chineseNumbers = { 0:'零',1:'一',2:'二',3:'三',4:'四',5:'五',6:'六',7:'七',8:'八',9:'九',10:'十' };
+
+        function getChineseNumber(num) {
+            if (num <= 10) return chineseNumbers[num];
+            return String(num);
+        }
+
+        function loadVoices() {
+            return new Promise(resolve => {
+                if (!('speechSynthesis' in window)) {
+                    console.warn('Speech synthesis not supported');
+                    resolve();
+                    return;
+                }
+                
+                cachedVoices = speechSynthesis.getVoices();
+                if (cachedVoices.length > 0) {
+                    voicesLoaded = true;
+                    resolve();
+                    return;
+                }
+                
+                const onVoicesChanged = () => {
+                    cachedVoices = speechSynthesis.getVoices();
+                    if (cachedVoices.length > 0) {
+                        voicesLoaded = true;
+                        resolve();
+                    }
+                };
+                
+                speechSynthesis.onvoiceschanged = onVoicesChanged;
+                
+                setTimeout(() => {
+                    if (!voicesLoaded) {
+                        cachedVoices = speechSynthesis.getVoices();
+                        voicesLoaded = cachedVoices.length > 0;
+                        resolve();
+                    }
+                }, 1000);
+            });
+        }
+
+        function findVoice(lang) {
+            if (cachedVoices.length === 0) {
+                cachedVoices = speechSynthesis.getVoices();
+            }
+            if (lang === 'chinese') {
+                return cachedVoices.find(v => v.lang.startsWith('zh-CN')) || 
+                       cachedVoices.find(v => v.lang.startsWith('zh')) ||
+                       cachedVoices.find(v => v.lang.includes('Chinese'));
+            }
+            return cachedVoices.find(v => v.lang === 'en-US') || 
+                   cachedVoices.find(v => v.lang.startsWith('en')) ||
+                   cachedVoices.find(v => v.lang.includes('English'));
+        }
+
+        function keepSpeechAlive() {
+            if (speechSynthesis.speaking) {
+                speechSynthesis.pause();
+                speechSynthesis.resume();
+            }
+        }
+        setInterval(keepSpeechAlive, 10000);
+
+        function initSpeechOnInteraction() {
+            if (speechInitialized) return;
+            speechInitialized = true;
+            const utterance = new SpeechSynthesisUtterance('');
+            speechSynthesis.speak(utterance);
+        }
+
+        async function speak(text, lang) {
+            if (!('speechSynthesis' in window) || !audioEnabled) return;
+            
+            try {
+                speechSynthesis.cancel();
+                await new Promise(r => setTimeout(r, 100));
+                speechSynthesis.resume();
+                
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.rate = 0.8;
+                utterance.pitch = 1.1;
+                utterance.lang = lang === 'chinese' ? 'zh-CN' : 'en-US';
+                
+                const voice = findVoice(lang);
+                if (voice) {
+                    utterance.voice = voice;
+                }
+                
+                await new Promise(r => setTimeout(r, 50));
+                speechSynthesis.speak(utterance);
+            } catch (e) {
+                console.warn('Speech failed:', e);
+            }
+        }
+
+        // Full equation: "6 equals 1 plus 5"
+        function speakEquation(total, redNum, blueNum) {
+            if (!speechInitialized || !audioEnabled) return;
+            
+            let text;
+            if (language === 'chinese') {
+                text = `${getChineseNumber(total)}等于${getChineseNumber(redNum)}加${getChineseNumber(blueNum)}`;
+            } else {
+                text = `${total} equals ${redNum} plus ${blueNum}`;
+            }
+            speak(text, language);
+        }
+
+        // Question: "6 equals 1 plus what?"
+        function speakQuestion(total, redNum) {
+            if (!speechInitialized || !audioEnabled) return;
+            
+            let text;
+            if (language === 'chinese') {
+                text = `${getChineseNumber(total)}等于${getChineseNumber(redNum)}加几`;
+            } else {
+                text = `${total} equals ${redNum} plus what?`;
+            }
+            speak(text, language);
+        }
+
+        function createStars() {
+            const starsContainer = document.getElementById('stars');
+            const starCount = 80;
+            
+            for (let i = 0; i < starCount; i++) {
+                const star = document.createElement('div');
+                star.className = 'star';
+                star.style.left = Math.random() * 100 + '%';
+                star.style.top = Math.random() * 100 + '%';
+                star.style.width = (Math.random() * 3 + 1) + 'px';
+                star.style.height = star.style.width;
+                star.style.animationDelay = Math.random() * 2 + 's';
+                star.style.animationDuration = (Math.random() * 2 + 1) + 's';
+                starsContainer.appendChild(star);
+            }
+        }
+
+        function selectTab(num) {
+            initSpeechOnInteraction();
+            currentNumber = num;
+            saveSettings();
+            
+            // Update tab buttons
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.toggle('active', parseInt(btn.dataset.num) === num);
+            });
+            
+            // Clear any pending auto-advance timer
+            if (autoAdvanceTimer) {
+                clearTimeout(autoAdvanceTimer);
+                autoAdvanceTimer = null;
+            }
+            
+            // Reset game state
+            currentQuestionRow = -1;
+            selectedRedNum = 0;
+            answeredRows.clear();
+            
+            renderGrid();
+            hideDiagram();
+            
+            // In game mode with auto mode, auto-select first quiz row
+            if (gameMode === 'game' && autoMode === 'auto') {
+                setTimeout(() => autoSelectFirstRow(), 300);
+            }
+        }
+
+        function renderGrid() {
+            const grid = document.getElementById('grid');
+            grid.innerHTML = '';
+            
+            const n = currentNumber;
+            const isGameMode = gameMode === 'game';
+            
+            // Create 12 rows x 10 columns
+            // Row 0: N white blocks
+            // Row 1: N red + 0 blue (for tabs 1-9, this row is skipped)
+            // Row 2: (N-1) red + 1 blue
+            // ...
+            // Row N: 1 red + (N-1) blue
+            // Row N+1: 0 red + N blue
+            for (let row = 0; row < 12; row++) {
+                const rowDiv = document.createElement('div');
+                rowDiv.className = 'composition-row';
+                rowDiv.dataset.row = row;
+                
+                if (row === 0) {
+                    // First row: white blocks with the total number
+                    for (let col = 0; col < 10; col++) {
+                        const cell = document.createElement('div');
+                        cell.className = 'grid-cell';
+                        
+                        if (col < n) {
+                            cell.classList.add('block', 'white-block');
+                            // Show number on FIRST white block (col === 0)
+                            if (col === 0) {
+                                cell.textContent = n;
+                            }
+                        }
+                        
+                        rowDiv.appendChild(cell);
+                    }
+                    rowDiv.classList.add('clickable');
+                    rowDiv.onclick = () => handleRowClick(0, n, 0, n);
+                } else if (row <= n + 1) {
+                    // Composition rows (REVERSED order):
+                    // Row 1 -> N red + 0 blue
+                    // Row 2 -> (N-1) red + 1 blue
+                    // ...
+                    // Row N+1 -> 0 red + N blue
+                    const redNum = n - (row - 1);
+                    const blueNum = row - 1;
+                    
+                    // In game mode, hide blue numbers unless row has been answered
+                    // Don't hide if blueNum is 0 (nothing to hide)
+                    const shouldHideBlue = isGameMode && blueNum > 0 && !answeredRows.has(row);
+                    
+                    for (let col = 0; col < 10; col++) {
+                        const cell = document.createElement('div');
+                        cell.className = 'grid-cell';
+                        
+                        if (col < redNum) {
+                            cell.classList.add('block', 'red-block');
+                            // Show number on FIRST red block (col === 0)
+                            if (col === 0) {
+                                cell.textContent = redNum;
+                            }
+                        } else if (col < n) {
+                            cell.classList.add('block', 'blue-block');
+                            // Show number on LAST blue block (col === n - 1)
+                            if (col === n - 1) {
+                                if (shouldHideBlue) {
+                                    cell.classList.add('hidden-number');
+                                    cell.dataset.blueNum = blueNum;
+                                    cell.dataset.row = row;
+                                } else {
+                                    cell.textContent = blueNum;
+                                }
+                            }
+                        }
+                        
+                        rowDiv.appendChild(cell);
+                    }
+                    rowDiv.classList.add('clickable');
+                    rowDiv.onclick = () => handleRowClick(row, n, redNum, blueNum);
+                } else {
+                    // Empty rows
+                    for (let col = 0; col < 10; col++) {
+                        const cell = document.createElement('div');
+                        cell.className = 'grid-cell';
+                        rowDiv.appendChild(cell);
+                    }
+                }
+                
+                grid.appendChild(rowDiv);
+            }
+            
+            updateAnswerArea();
+        }
+
+        function handleRowClick(rowIndex, total, redNum, blueNum) {
+            initSpeechOnInteraction();
+            
+            // Remove previous selection
+            document.querySelectorAll('.composition-row.selected').forEach(r => r.classList.remove('selected'));
+            
+            // Select this row
+            const rows = document.querySelectorAll('.composition-row');
+            rows[rowIndex].classList.add('selected');
+            
+            if (gameMode === 'learn') {
+                // In learn mode, speak the equation and show diagram
+                speakEquation(total, redNum, blueNum);
+                showDiagram(total, redNum, blueNum, false);
+            } else {
+                // In game mode
+                if (rowIndex === 0) {
+                    // White row clicked - show diagram but no question
+                    speakEquation(total, 0, total);
+                    showDiagram(total, 0, total, false);
+                    return;
+                }
+                
+                // If row already answered, just speak the equation and show diagram
+                if (answeredRows.has(rowIndex)) {
+                    speakEquation(total, redNum, blueNum);
+                    showDiagram(total, redNum, blueNum, false);
+                    return;
+                }
+                
+                // Start a question for this row (including blueNum = 0)
+                currentQuestionRow = rowIndex;
+                correctBlueNumber = blueNum;
+                selectedRedNum = redNum;
+                
+                // Speak the question
+                speakQuestion(total, redNum);
+                
+                // Show diagram with hidden blue number
+                showDiagram(total, redNum, blueNum, true);
+                
+                // Show answer choices
+                showAnswerChoices();
+            }
+        }
+
+        function showDiagram(total, redNum, blueNum, hideBlue) {
+            const container = document.getElementById('diagramContainer');
+            const diagram = document.getElementById('diagram');
+            
+            container.classList.remove('hidden');
+            
+            diagram.innerHTML = `
+                <div class="diagram-block white">${total}</div>
+                <div class="diagram-connectors">
+                    <span class="diagram-slash">/</span>
+                    <span style="width: 20px;"></span>
+                    <span class="diagram-slash">\\</span>
+                </div>
+                <div class="diagram-branch">
+                    <div class="diagram-block red">${redNum}</div>
+                    <div class="diagram-block blue ${hideBlue ? 'hidden-num' : ''}" id="diagramBlueBlock">${hideBlue ? '' : blueNum}</div>
+                </div>
+            `;
+        }
+
+        function hideDiagram() {
+            document.getElementById('diagramContainer').classList.add('hidden');
+        }
+
+        function updateDiagramBlueNumber(blueNum) {
+            const blueBlock = document.getElementById('diagramBlueBlock');
+            if (blueBlock) {
+                blueBlock.classList.remove('hidden-num');
+                blueBlock.textContent = blueNum;
+            }
+        }
+
+        function showAnswerChoices() {
+            const answerArea = document.getElementById('answerArea');
+            const choicesDiv = document.getElementById('answerChoices');
+            const feedback = document.getElementById('feedback');
+            
+            answerArea.classList.remove('hidden');
+            feedback.textContent = '';
+            feedback.className = 'feedback';
+            
+            // Update existing buttons or create new ones
+            choicesDiv.innerHTML = '';
+            for (let i = 0; i <= currentNumber; i++) {
+                const btn = document.createElement('button');
+                btn.className = 'choice-btn';
+                btn.textContent = i;
+                btn.disabled = false;
+                btn.onclick = () => checkGameAnswer(i, btn);
+                choicesDiv.appendChild(btn);
+            }
+        }
+
+        function checkGameAnswer(selectedNum, btn) {
+            initSpeechOnInteraction();
+            
+            const feedback = document.getElementById('feedback');
+            
+            if (selectedNum === correctBlueNumber) {
+                btn.classList.add('correct');
+                feedback.textContent = language === 'chinese' ? '🎉 正确！' : '🎉 Correct!';
+                feedback.className = 'feedback correct';
+                
+                // Mark this row as answered
+                answeredRows.add(currentQuestionRow);
+                
+                // Speak the full equation
+                speakEquation(currentNumber, selectedRedNum, correctBlueNumber);
+                
+                // Update grid to show the revealed number
+                const hiddenCell = document.querySelector(`.grid-cell.hidden-number[data-row="${currentQuestionRow}"]`);
+                if (hiddenCell) {
+                    hiddenCell.classList.remove('hidden-number');
+                    hiddenCell.textContent = correctBlueNumber;
+                }
+                
+                // Update diagram to show blue number
+                updateDiagramBlueNumber(correctBlueNumber);
+                
+                // Disable all choice buttons
+                document.querySelectorAll('.choice-btn').forEach(b => b.disabled = true);
+                
+                if (autoMode === 'auto') {
+                    // Auto mode: advance to next row after 3 seconds
+                    autoAdvanceTimer = setTimeout(() => {
+                        autoAdvanceTimer = null;
+                        autoAdvanceToNextRow();
+                    }, 3000);
+                } else {
+                    // Manual mode: hide answer area after delay
+                    setTimeout(() => {
+                        document.getElementById('answerArea').classList.add('hidden');
+                        document.getElementById('feedback').textContent = '';
+                        currentQuestionRow = -1;
+                    }, 1500);
+                }
+            } else {
+                btn.classList.add('wrong');
+                feedback.textContent = language === 'chinese' ? '❌ 再试一次' : '❌ Try again';
+                feedback.className = 'feedback wrong';
+                
+                // Remove wrong class after animation
+                setTimeout(() => {
+                    btn.classList.remove('wrong');
+                }, 500);
+            }
+        }
+
+        function updateAnswerArea() {
+            const answerArea = document.getElementById('answerArea');
+            const choicesDiv = document.getElementById('answerChoices');
+            const feedback = document.getElementById('feedback');
+            
+            // Always render placeholder buttons to maintain consistent height
+            if (choicesDiv.children.length === 0) {
+                for (let i = 0; i <= currentNumber; i++) {
+                    const btn = document.createElement('button');
+                    btn.className = 'choice-btn';
+                    btn.textContent = i;
+                    btn.disabled = true;
+                    choicesDiv.appendChild(btn);
+                }
+            }
+            
+            feedback.textContent = '';
+            
+            // Hide when not in active game question
+            if (gameMode === 'game' && currentQuestionRow === -1) {
+                answerArea.classList.add('hidden');
+            } else if (gameMode === 'learn') {
+                answerArea.classList.add('hidden');
+            }
+        }
+
+        function setLanguage(lang, skipSave) {
+            language = lang;
+            document.querySelectorAll('[data-lang]').forEach(btn => btn.classList.toggle('active', btn.dataset.lang === lang));
+            if (!skipSave) saveSettings();
+            
+            // Translate UI
+            const translations = {
+                chinese: {
+                    labelLang: '🌐 语言',
+                    labelMode: '🎮 模式',
+                    labelAutoMode: '⏩ 游戏',
+                    labelLabels: '🏷️ 标签',
+                    labelAudio: '🔊 声音',
+                    btnModeLearn: '学习',
+                    btnModeGame: '游戏',
+                    btnAutoModeAuto: '自动',
+                    btnAutoModeManual: '手动',
+                    btnLabelsOn: '显示',
+                    btnLabelsOff: '隐藏',
+                    btnAudioOn: '开启',
+                    btnAudioOff: '关闭',
+                    homeTitle: '首页',
+                    answerPrompt: '选择蓝色方块的数字'
+                },
+                english: {
+                    labelLang: '🌐 Lang',
+                    labelMode: '🎮 Mode',
+                    labelAutoMode: '⏩ Game',
+                    labelLabels: '🏷️ Labels',
+                    labelAudio: '🔊 Audio',
+                    btnModeLearn: 'Learn',
+                    btnModeGame: 'Game',
+                    btnAutoModeAuto: 'Auto',
+                    btnAutoModeManual: 'Manual',
+                    btnLabelsOn: 'Show',
+                    btnLabelsOff: 'Hide',
+                    btnAudioOn: 'On',
+                    btnAudioOff: 'Off',
+                    homeTitle: 'Home',
+                    answerPrompt: 'Choose the blue number'
+                }
+            };
+            
+            const t = translations[lang];
+            document.getElementById('labelLang').textContent = t.labelLang;
+            document.getElementById('labelMode').textContent = t.labelMode;
+            document.getElementById('labelAutoMode').textContent = t.labelAutoMode;
+            document.getElementById('labelLabels').textContent = t.labelLabels;
+            document.getElementById('labelAudio').textContent = t.labelAudio;
+            document.getElementById('btnModeLearn').textContent = t.btnModeLearn;
+            document.getElementById('btnModeGame').textContent = t.btnModeGame;
+            document.getElementById('btnAutoModeAuto').textContent = t.btnAutoModeAuto;
+            document.getElementById('btnAutoModeManual').textContent = t.btnAutoModeManual;
+            document.getElementById('btnLabelsOn').textContent = t.btnLabelsOn;
+            document.getElementById('btnLabelsOff').textContent = t.btnLabelsOff;
+            document.getElementById('btnAudioOn').textContent = t.btnAudioOn;
+            document.getElementById('btnAudioOff').textContent = t.btnAudioOff;
+            document.getElementById('homeBtn').title = t.homeTitle;
+            document.getElementById('answerPrompt').textContent = t.answerPrompt;
+        }
+
+        function setGameMode(mode, skipSave) {
+            gameMode = mode;
+            document.querySelectorAll('[data-mode]').forEach(btn => btn.classList.toggle('active', btn.dataset.mode === mode));
+            
+            // Show/hide auto mode panel
+            document.getElementById('autoModePanel').style.display = mode === 'game' ? 'flex' : 'none';
+            
+            // Clear any pending auto-advance timer
+            if (autoAdvanceTimer) {
+                clearTimeout(autoAdvanceTimer);
+                autoAdvanceTimer = null;
+            }
+            
+            // Reset game state
+            currentQuestionRow = -1;
+            selectedRedNum = 0;
+            answeredRows.clear();
+            
+            if (!skipSave) saveSettings();
+            renderGrid();
+            hideDiagram();
+            
+            // In game mode with auto mode, auto-select first row
+            if (mode === 'game' && autoMode === 'auto') {
+                setTimeout(() => autoSelectFirstRow(), 300);
+            }
+        }
+        
+        function setAutoMode(mode, skipSave) {
+            autoMode = mode;
+            document.querySelectorAll('[data-automode]').forEach(btn => btn.classList.toggle('active', btn.dataset.automode === mode));
+            
+            // Clear any pending auto-advance timer
+            if (autoAdvanceTimer) {
+                clearTimeout(autoAdvanceTimer);
+                autoAdvanceTimer = null;
+            }
+            
+            // Reset game state
+            currentQuestionRow = -1;
+            selectedRedNum = 0;
+            answeredRows.clear();
+            
+            if (!skipSave) saveSettings();
+            renderGrid();
+            hideDiagram();
+            
+            // In auto mode, auto-select first row
+            if (mode === 'auto' && gameMode === 'game') {
+                setTimeout(() => autoSelectFirstRow(), 300);
+            }
+        }
+        
+        function autoSelectFirstRow() {
+            if (gameMode !== 'game' || autoMode !== 'auto') return;
+            
+            const n = currentNumber;
+            // First quiz row is row 1 (N red + 0 blue)
+            const firstQuizRow = 1;
+            const redNum = n - (firstQuizRow - 1); // n
+            const blueNum = firstQuizRow - 1; // 0
+            
+            currentQuestionRow = firstQuizRow;
+            correctBlueNumber = blueNum;
+            selectedRedNum = redNum;
+            
+            // Select the row visually
+            document.querySelectorAll('.composition-row.selected').forEach(r => r.classList.remove('selected'));
+            const rows = document.querySelectorAll('.composition-row');
+            if (rows[firstQuizRow]) rows[firstQuizRow].classList.add('selected');
+            
+            // Speak the question
+            speakQuestion(n, redNum);
+            
+            // Show diagram with hidden blue number
+            showDiagram(n, redNum, blueNum, true);
+            
+            // Show answer choices
+            showAnswerChoices();
+        }
+        
+        function autoAdvanceToNextRow() {
+            if (gameMode !== 'game' || autoMode !== 'auto') return;
+            
+            const nextRow = currentQuestionRow + 1;
+            const n = currentNumber;
+            
+            // Composition rows (reversed):
+            // Row 2: (N-1) red + 1 blue
+            // Row 3: (N-2) red + 2 blue
+            // ...
+            // Row N+1: 0 red + N blue
+            const redNum = n - (nextRow - 1);
+            const blueNum = nextRow - 1;
+            
+            if (nextRow <= n + 1) {
+                currentQuestionRow = nextRow;
+                correctBlueNumber = blueNum;
+                selectedRedNum = redNum;
+                
+                // Select the row visually
+                document.querySelectorAll('.composition-row.selected').forEach(r => r.classList.remove('selected'));
+                const rows = document.querySelectorAll('.composition-row');
+                if (rows[nextRow]) rows[nextRow].classList.add('selected');
+                
+                // Speak the question
+                speakQuestion(n, redNum);
+                
+                // Show diagram with hidden blue number
+                showDiagram(n, redNum, blueNum, true);
+                
+                // Show answer choices
+                showAnswerChoices();
+            } else {
+                // All rows completed
+                document.getElementById('answerArea').classList.add('hidden');
+                document.getElementById('feedback').textContent = language === 'chinese' ? '🎊 完成！' : '🎊 Complete!';
+                currentQuestionRow = -1;
+            }
+        }
+
+        function setShowLabels(show, skipSave) {
+            showLabels = show;
+            document.querySelectorAll('[data-labels]').forEach(btn => btn.classList.toggle('active', btn.dataset.labels === String(show)));
+            
+            document.getElementById('topLabels').classList.toggle('hidden', !show);
+            
+            if (!skipSave) saveSettings();
+        }
+
+        function setAudioEnabled(enabled, skipSave) {
+            audioEnabled = enabled;
+            document.querySelectorAll('[data-audio]').forEach(btn => btn.classList.toggle('active', btn.dataset.audio === String(enabled)));
+            if (!enabled) {
+                speechSynthesis.cancel();
+            }
+            if (!skipSave) saveSettings();
+        }
+
+        // Initialize
+        createStars();
+        loadSettings();
+        loadVoices().then(() => {
+            setLanguage(language, true);
+            setAutoMode(autoMode, true);
+            setGameMode(gameMode, true);
+            setShowLabels(showLabels, true);
+            setAudioEnabled(audioEnabled, true);
+            selectTab(currentNumber);
+        });
+
+        // Keyboard navigation
+        document.addEventListener('keydown', e => {
+            initSpeechOnInteraction();
+            
+            // Number keys only work in game mode with active question
+            if (e.key >= '0' && e.key <= '9') {
+                if (gameMode === 'game' && currentQuestionRow !== -1) {
+                    const num = parseInt(e.key);
+                    // Find the button with this number and click it
+                    const buttons = document.querySelectorAll('.choice-btn:not(:disabled)');
+                    buttons.forEach(btn => {
+                        if (parseInt(btn.textContent) === num) {
+                            btn.click();
+                        }
+                    });
+                }
+                // In all other cases, number keys do nothing
+                return;
+            }
+            
+            // In game mode with manual mode, arrow keys navigate rows
+            if (gameMode === 'game' && autoMode === 'manual') {
+                if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {
+                    e.preventDefault();
+                    navigateToRow(1); // Next row
+                    return;
+                } else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
+                    e.preventDefault();
+                    navigateToRow(-1); // Previous row
+                    return;
+                }
+            }
+            
+            // In learn mode, arrow keys for tab navigation
+            if (gameMode === 'learn') {
+                if (e.key === 'ArrowLeft' && currentNumber > 1) {
+                    selectTab(currentNumber - 1);
+                } else if (e.key === 'ArrowRight' && currentNumber < 10) {
+                    selectTab(currentNumber + 1);
+                }
+            }
+        });
+        
+        function navigateToRow(direction) {
+            // Find the next row
+            // Composition rows (reversed):
+            // Row 1: N red + 0 blue
+            // Row 2: (N-1) red + 1 blue
+            // ...
+            // Row N+1: 0 red + N blue
+            const n = currentNumber;
+            const firstQuizRow = 1;
+            let targetRow;
+            
+            if (currentQuestionRow === -1) {
+                // No row selected, start from first or last composition row
+                targetRow = direction > 0 ? firstQuizRow : n + 1;
+            } else {
+                targetRow = currentQuestionRow + direction;
+            }
+            
+            // Clamp to valid composition row range (1 to N+1)
+            if (targetRow < firstQuizRow) targetRow = firstQuizRow;
+            if (targetRow > n + 1) targetRow = n + 1;
+            
+            // Calculate red and blue for reversed order
+            const redNum = n - (targetRow - 1);
+            const blueNum = targetRow - 1;
+            
+            // If already answered, just show the info
+            if (answeredRows.has(targetRow)) {
+                currentQuestionRow = targetRow;
+                
+                // Select the row visually
+                document.querySelectorAll('.composition-row.selected').forEach(r => r.classList.remove('selected'));
+                const rows = document.querySelectorAll('.composition-row');
+                if (rows[targetRow]) rows[targetRow].classList.add('selected');
+                
+                speakEquation(n, redNum, blueNum);
+                showDiagram(n, redNum, blueNum, false);
+                document.getElementById('answerArea').classList.add('hidden');
+            } else {
+                // Not answered, start the question
+                currentQuestionRow = targetRow;
+                correctBlueNumber = blueNum;
+                selectedRedNum = redNum;
+                
+                // Select the row visually
+                document.querySelectorAll('.composition-row.selected').forEach(r => r.classList.remove('selected'));
+                const rows = document.querySelectorAll('.composition-row');
+                if (rows[targetRow]) rows[targetRow].classList.add('selected');
+                
+                speakQuestion(n, redNum);
+                showDiagram(n, redNum, blueNum, true);
+                showAnswerChoices();
+            }
+        }
+
+        // Touch/click initialization
+        document.addEventListener('click', () => initSpeechOnInteraction(), { once: true });
+    </script>
+</body>
+</html>
