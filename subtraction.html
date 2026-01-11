@@ -431,15 +431,14 @@
 
         // Settings persistence
         const STORAGE_KEY = 'numberblocks_subtraction_settings';
+        const SHARED_STORAGE_KEY = 'numberblocks_shared_settings';
         
         function saveSettings() {
             const settings = {
-                language: language,
                 maxRange: maxRange,
                 showBlocks: showBlocks,
                 showLabels: showLabels,
-                autoAdvance: autoAdvance,
-                audioEnabled: audioEnabled
+                autoAdvance: autoAdvance
             };
             try {
                 localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
@@ -447,18 +446,35 @@
                 console.warn('Could not save settings:', e);
             }
         }
+
+        function saveSharedSettings() {
+            try {
+                const shared = JSON.parse(localStorage.getItem(SHARED_STORAGE_KEY) || '{}');
+                shared.audioEnabled = audioEnabled;
+                shared.language = language;
+                localStorage.setItem(SHARED_STORAGE_KEY, JSON.stringify(shared));
+            } catch (e) {
+                console.warn('Could not save shared settings:', e);
+            }
+        }
         
         function loadSettings() {
             try {
+                // Load shared settings first
+                const shared = localStorage.getItem(SHARED_STORAGE_KEY);
+                if (shared) {
+                    const sharedSettings = JSON.parse(shared);
+                    if (typeof sharedSettings.audioEnabled === 'boolean') audioEnabled = sharedSettings.audioEnabled;
+                    if (sharedSettings.language) language = sharedSettings.language;
+                }
+                // Load local settings
                 const saved = localStorage.getItem(STORAGE_KEY);
                 if (saved) {
                     const settings = JSON.parse(saved);
-                    if (settings.language) language = settings.language;
                     if (settings.maxRange) maxRange = settings.maxRange;
                     if (typeof settings.showBlocks === 'boolean') showBlocks = settings.showBlocks;
                     if (typeof settings.showLabels === 'boolean') showLabels = settings.showLabels;
                     if (typeof settings.autoAdvance === 'boolean') autoAdvance = settings.autoAdvance;
-                    if (typeof settings.audioEnabled === 'boolean') audioEnabled = settings.audioEnabled;
                 }
             } catch (e) {
                 console.warn('Could not load settings:', e);
@@ -593,7 +609,7 @@
             if (!enabled) {
                 speechSynthesis.cancel();
             }
-            if (!skipSave) saveSettings();
+            if (!skipSave) saveSharedSettings();
         }
 
         function setQuizMode(mode) {
@@ -1328,7 +1344,7 @@
         function setLanguage(lang, skipSave) {
             language = lang;
             document.querySelectorAll('[data-lang]').forEach(btn => btn.classList.toggle('active', btn.dataset.lang === lang));
-            if (!skipSave) saveSettings();
+            if (!skipSave) saveSharedSettings();
             
             const translations = {
                 chinese: {

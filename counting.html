@@ -511,6 +511,52 @@
         let autoMode = false;
         let autoTimer = null;
 
+        // Settings persistence
+        const STORAGE_KEY = 'numberblocks_counting_settings';
+        const SHARED_STORAGE_KEY = 'numberblocks_shared_settings';
+
+        function saveSettings() {
+            const settings = {
+                languageMode: languageMode,
+                autoMode: autoMode
+            };
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+            } catch (e) {
+                console.warn('Could not save settings:', e);
+            }
+        }
+
+        function saveSharedSettings() {
+            try {
+                const shared = JSON.parse(localStorage.getItem(SHARED_STORAGE_KEY) || '{}');
+                shared.audioEnabled = audioEnabled;
+                localStorage.setItem(SHARED_STORAGE_KEY, JSON.stringify(shared));
+            } catch (e) {
+                console.warn('Could not save shared settings:', e);
+            }
+        }
+
+        function loadSettings() {
+            try {
+                // Load shared settings first
+                const shared = localStorage.getItem(SHARED_STORAGE_KEY);
+                if (shared) {
+                    const sharedSettings = JSON.parse(shared);
+                    if (typeof sharedSettings.audioEnabled === 'boolean') audioEnabled = sharedSettings.audioEnabled;
+                }
+                // Load local settings
+                const saved = localStorage.getItem(STORAGE_KEY);
+                if (saved) {
+                    const settings = JSON.parse(saved);
+                    if (settings.languageMode) languageMode = settings.languageMode;
+                    if (typeof settings.autoMode === 'boolean') autoMode = settings.autoMode;
+                }
+            } catch (e) {
+                console.warn('Could not load settings:', e);
+            }
+        }
+
         // Chinese number words
         const chineseNumbers = {
             0: '零', 1: '一', 2: '二', 3: '三', 4: '四',
@@ -552,7 +598,7 @@
             return `${chinese} · ${english}`;
         }
 
-        function setLanguageMode(mode) {
+        function setLanguageMode(mode, skipSave) {
             languageMode = mode;
             
             // Update button styles
@@ -562,9 +608,10 @@
             
             // Update display
             updateNumberText();
+            if (!skipSave) saveSettings();
         }
 
-        function setAudioEnabled(enabled) {
+        function setAudioEnabled(enabled, skipSave) {
             audioEnabled = enabled;
             document.querySelectorAll('[data-audio]').forEach(btn => {
                 btn.classList.toggle('active', btn.dataset.audio === String(enabled));
@@ -573,9 +620,10 @@
                 speechSynthesis.cancel();
                 clearAutoTimer();
             }
+            if (!skipSave) saveSharedSettings();
         }
 
-        function setAutoMode(enabled) {
+        function setAutoMode(enabled, skipSave) {
             autoMode = enabled;
             document.querySelectorAll('[data-auto]').forEach(btn => {
                 btn.classList.toggle('active', btn.dataset.auto === String(enabled));
@@ -583,6 +631,7 @@
             if (!enabled) {
                 clearAutoTimer();
             }
+            if (!skipSave) saveSettings();
         }
 
         function clearAutoTimer() {
@@ -995,16 +1044,24 @@
 
         // Initialize
         createBubbles();
+        loadSettings();
         
         // Load voices first, then start
         if ('speechSynthesis' in window) {
             loadVoices().then(() => {
                 console.log('Voices loaded:', cachedVoices.length);
+                // Apply loaded settings (skipSave=true to avoid re-saving)
+                setLanguageMode(languageMode, true);
+                setAudioEnabled(audioEnabled, true);
+                setAutoMode(autoMode, true);
                 setTimeout(() => {
                     updateDisplay(true);
                 }, 300);
             });
         } else {
+            setLanguageMode(languageMode, true);
+            setAudioEnabled(audioEnabled, true);
+            setAutoMode(autoMode, true);
             updateDisplay(false);
         }
     </script>

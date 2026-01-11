@@ -458,13 +458,12 @@
 
         // Settings persistence
         const STORAGE_KEY = 'numberblocks_composition_settings';
+        const SHARED_STORAGE_KEY = 'numberblocks_shared_settings';
 
         function saveSettings() {
             const settings = {
-                language: language,
                 gameMode: gameMode,
                 autoMode: autoMode,
-                audioEnabled: audioEnabled,
                 showLabels: showLabels,
                 currentNumber: currentNumber
             };
@@ -475,15 +474,32 @@
             }
         }
 
+        function saveSharedSettings() {
+            try {
+                const shared = JSON.parse(localStorage.getItem(SHARED_STORAGE_KEY) || '{}');
+                shared.audioEnabled = audioEnabled;
+                shared.language = language;
+                localStorage.setItem(SHARED_STORAGE_KEY, JSON.stringify(shared));
+            } catch (e) {
+                console.warn('Could not save shared settings:', e);
+            }
+        }
+
         function loadSettings() {
             try {
+                // Load shared settings first
+                const shared = localStorage.getItem(SHARED_STORAGE_KEY);
+                if (shared) {
+                    const sharedSettings = JSON.parse(shared);
+                    if (typeof sharedSettings.audioEnabled === 'boolean') audioEnabled = sharedSettings.audioEnabled;
+                    if (sharedSettings.language) language = sharedSettings.language;
+                }
+                // Load local settings
                 const saved = localStorage.getItem(STORAGE_KEY);
                 if (saved) {
                     const settings = JSON.parse(saved);
-                    if (settings.language) language = settings.language;
                     if (settings.gameMode) gameMode = settings.gameMode;
                     if (settings.autoMode) autoMode = settings.autoMode;
-                    if (typeof settings.audioEnabled === 'boolean') audioEnabled = settings.audioEnabled;
                     if (typeof settings.showLabels === 'boolean') showLabels = settings.showLabels;
                     if (settings.currentNumber >= 1 && settings.currentNumber <= 10) currentNumber = settings.currentNumber;
                 }
@@ -937,7 +953,7 @@
         function setLanguage(lang, skipSave) {
             language = lang;
             document.querySelectorAll('[data-lang]').forEach(btn => btn.classList.toggle('active', btn.dataset.lang === lang));
-            if (!skipSave) saveSettings();
+            if (!skipSave) saveSharedSettings();
             
             // Translate UI
             const translations = {
@@ -1131,7 +1147,7 @@
             if (!enabled) {
                 speechSynthesis.cancel();
             }
-            if (!skipSave) saveSettings();
+            if (!skipSave) saveSharedSettings();
         }
 
         // Initialize
