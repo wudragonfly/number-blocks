@@ -646,7 +646,7 @@
         }
 
         function speakEquation(multiplier, position) {
-            if (!speechInitialized || !audioEnabled) return Promise.resolve();
+            if (!audioEnabled) return Promise.resolve();
             
             const result = multiplier * position;
             let text;

@@ -594,12 +594,12 @@
         }
 
         function speakQuestion() {
-            if (!speechInitialized || !audioEnabled) return;
+            if (!audioEnabled) return;
             speak(language === 'chinese' ? `${getChineseNumber(minuend)} 减 ${getChineseNumber(subtrahend)}` : `${minuend} minus ${subtrahend}`, language);
         }
 
         function speakAnswer() {
-            if (!speechInitialized || !audioEnabled) return;
+            if (!audioEnabled) return;
             speak(language === 'chinese' ? `等于 ${getChineseNumber(correctAnswer)}` : `equals ${correctAnswer}`, language);
         }
 

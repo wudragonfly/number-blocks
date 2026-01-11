@@ -606,7 +606,7 @@
 
         // Full equation: "6 equals 1 plus 5"
         function speakEquation(total, redNum, blueNum) {
-            if (!speechInitialized || !audioEnabled) return;
+            if (!audioEnabled) return;
             
             let text;
             if (language === 'chinese') {
@@ -619,7 +619,7 @@
 
         // Question: "6 equals 1 plus what?"
         function speakQuestion(total, redNum) {
-            if (!speechInitialized || !audioEnabled) return;
+            if (!audioEnabled) return;
             
             let text;
             if (language === 'chinese') {
@@ -1029,13 +1029,14 @@
             selectedRedNum = 0;
             answeredRows.clear();
             
-            if (!skipSave) saveSettings();
-            renderGrid();
-            hideDiagram();
-            
-            // In game mode with auto mode, auto-select first row
-            if (mode === 'game' && autoMode === 'auto') {
-                setTimeout(() => autoSelectFirstRow(), 300);
+            if (!skipSave) {
+                saveSettings();
+                renderGrid();
+                hideDiagram();
+                // In game mode with auto mode, auto-select first row
+                if (mode === 'game' && autoMode === 'auto') {
+                    setTimeout(() => autoSelectFirstRow(), 300);
+                }
             }
         }
         
@@ -1054,13 +1055,14 @@
             selectedRedNum = 0;
             answeredRows.clear();
             
-            if (!skipSave) saveSettings();
-            renderGrid();
-            hideDiagram();
-            
-            // In auto mode, auto-select first row
-            if (mode === 'auto' && gameMode === 'game') {
-                setTimeout(() => autoSelectFirstRow(), 300);
+            if (!skipSave) {
+                saveSettings();
+                renderGrid();
+                hideDiagram();
+                // In auto mode, auto-select first row
+                if (mode === 'auto' && gameMode === 'game') {
+                    setTimeout(() => autoSelectFirstRow(), 300);
+                }
             }
         }
         

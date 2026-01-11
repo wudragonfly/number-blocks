@@ -600,14 +600,12 @@
         }
 
         function speakQuestion() {
-            // Only speak if user has interacted and audio is enabled
-            if (!speechInitialized || !audioEnabled) return;
+            if (!audioEnabled) return;
             speak(language === 'chinese' ? `${getChineseNumber(num1)} 加 ${getChineseNumber(num2)}` : `${num1} plus ${num2}`, language);
         }
 
         function speakAnswer() {
-            // Only speak if user has interacted and audio is enabled
-            if (!speechInitialized || !audioEnabled) return;
+            if (!audioEnabled) return;
             speak(language === 'chinese' ? `等于 ${getChineseNumber(correctAnswer)}` : `equals ${correctAnswer}`, language);
         }
 

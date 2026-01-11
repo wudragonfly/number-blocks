@@ -967,8 +967,8 @@
         }
 
         async function sayNumber() {
-            // Only speak if user has interacted and audio is enabled
-            if (!('speechSynthesis' in window) || !speechInitialized || !audioEnabled) {
+            // Only speak if audio is enabled
+            if (!('speechSynthesis' in window) || !audioEnabled) {
                 // If audio disabled but auto mode on, still advance
                 if (autoMode && currentNumber < MAX) {
                     startAutoTimer();
