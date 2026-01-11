@@ -1,0 +1,1005 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Number Blocks - Multiplication</title>
+    <script src="loader.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@700;900&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root { --block-size: 32px; --grid-gap: 2px; }
+        html, body { height: 100%; overflow: hidden; }
+
+        body {
+            font-family: 'Fredoka One', cursive;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+        }
+
+        /* Animated stars background */
+        .stars { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; overflow: hidden; z-index: 0; }
+        .star { position: absolute; background: white; border-radius: 50%; animation: twinkle 2s infinite ease-in-out; }
+        @keyframes twinkle {
+            0%, 100% { opacity: 0.3; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.2); }
+        }
+
+        .controls { position: fixed; top: 10px; left: 10px; display: flex; flex-direction: column; gap: 6px; z-index: 10; }
+        .control-panel { display: flex; flex-direction: column; gap: 3px; background: rgba(255,255,255,0.15); padding: 8px; border-radius: 10px; backdrop-filter: blur(10px); }
+        .control-panel label { color: white; font-size: 9px; text-transform: uppercase; letter-spacing: 1px; }
+        .control-btn { background: rgba(255,255,255,0.25); border: 2px solid transparent; padding: 5px 8px; border-radius: 8px; font-family: 'Fredoka One', cursive; font-size: 11px; cursor: pointer; color: white; transition: all 0.3s; }
+        .control-btn:hover { background: rgba(255,255,255,0.35); }
+        .control-btn.active { background: linear-gradient(145deg, #ff9a9e, #fecfef); color: #c0392b; border-color: white; }
+
+        .nav-hint { position: fixed; top: 10px; right: 10px; background: rgba(255,255,255,0.2); padding: 6px 10px; border-radius: 10px; color: white; font-size: 10px; backdrop-filter: blur(5px); line-height: 1.4; }
+
+        .main-container { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; gap: 15px; width: 100%; max-width: 900px; padding: 10px; }
+
+        /* Tabs */
+        .tabs { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
+        .tab-btn {
+            width: 44px; height: 44px;
+            border-radius: 12px; border: 3px solid transparent;
+            font-size: 20px;
+            font-family: 'Nunito', sans-serif;
+            font-weight: 900;
+            cursor: pointer;
+            transition: all 0.3s;
+            color: white;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+        .tab-btn:hover { transform: scale(1.1); }
+        .tab-btn.active { border-color: white; transform: scale(1.15); box-shadow: 0 6px 20px rgba(0,0,0,0.4); }
+        .tab-btn.tab-1 { background: linear-gradient(145deg, #e74c3c, #c0392b); }
+        .tab-btn.tab-2 { background: linear-gradient(145deg, #e67e22, #d35400); }
+        .tab-btn.tab-3 { background: linear-gradient(145deg, #f1c40f, #f39c12); }
+        .tab-btn.tab-4 { background: linear-gradient(145deg, #2ecc71, #27ae60); }
+        .tab-btn.tab-5 { background: linear-gradient(145deg, #3498db, #2980b9); }
+        .tab-btn.tab-6 { background: linear-gradient(145deg, #9b59b6, #8e44ad); }
+        .tab-btn.tab-7 { background: linear-gradient(145deg, #1abc9c, #16a085); }
+        .tab-btn.tab-8 { background: linear-gradient(145deg, #e91e63, #c2185b); }
+        .tab-btn.tab-9 { background: linear-gradient(145deg, #00bcd4, #0097a7); }
+        .tab-btn.tab-10 { background: linear-gradient(145deg, #ff5722, #e64a19); }
+
+        /* Grid Container */
+        .grid-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* Equation display */
+        .equation-display {
+            font-size: clamp(24px, 5vw, 36px);
+            color: white;
+            text-shadow: 2px 2px 0 rgba(0,0,0,0.3);
+            font-family: 'Nunito', sans-serif;
+            font-weight: 900;
+            min-height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 10px;
+        }
+
+        /* Top labels (1-10) */
+        .top-labels {
+            display: flex;
+            padding-left: 24px;
+            margin-bottom: 2px;
+        }
+        .top-labels.hidden { visibility: hidden; }
+        .top-label {
+            width: var(--block-size);
+            height: 20px;
+            margin-right: var(--grid-gap);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Nunito', sans-serif;
+            font-weight: 700;
+            font-size: calc(var(--block-size) * 0.5);
+            color: rgba(255,255,255,0.6);
+        }
+
+        /* Left labels (1-10) */
+        .grid-with-labels {
+            display: flex;
+            align-items: flex-start;
+        }
+        .left-labels {
+            display: flex;
+            flex-direction: column;
+            margin-right: 4px;
+            padding-top: 4px;
+        }
+        .left-labels.hidden { visibility: hidden; }
+        .left-label {
+            width: 20px;
+            height: var(--block-size);
+            margin-bottom: var(--grid-gap);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Nunito', sans-serif;
+            font-weight: 700;
+            font-size: calc(var(--block-size) * 0.5);
+            color: rgba(255,255,255,0.6);
+        }
+
+        .grid-container {
+            background: rgba(255,255,255,0.1);
+            border-radius: 16px;
+            padding: 15px;
+            backdrop-filter: blur(10px);
+        }
+
+        .multiplication-grid {
+            display: grid;
+            grid-template-columns: repeat(10, var(--block-size));
+            grid-template-rows: repeat(10, var(--block-size));
+            gap: var(--grid-gap);
+            background: rgba(0,0,0,0.2);
+            padding: 4px;
+            border-radius: 8px;
+        }
+
+        .grid-cell {
+            width: var(--block-size);
+            height: var(--block-size);
+            border-radius: 4px;
+            background: rgba(255,255,255,0.05);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Nunito', sans-serif;
+            font-weight: 900;
+            font-size: calc(var(--block-size) * 0.45);
+            color: rgba(255,255,255,0.9);
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+            transition: opacity 0.3s, transform 0.2s;
+        }
+
+        .grid-cell.block {
+            box-shadow: 
+                inset -2px -2px 0 rgba(0,0,0,0.2),
+                inset 2px 2px 0 rgba(255,255,255,0.3),
+                2px 2px 5px rgba(0,0,0,0.3);
+        }
+
+        .grid-cell.inactive {
+            opacity: 0.2;
+        }
+
+        .grid-cell.active {
+            opacity: 1;
+            transform: scale(1.05);
+        }
+
+        .grid-cell.current-highlight {
+            box-shadow: 
+                inset -2px -2px 0 rgba(0,0,0,0.2),
+                inset 2px 2px 0 rgba(255,255,255,0.3),
+                2px 2px 5px rgba(0,0,0,0.3),
+                0 0 10px rgba(255,255,255,0.5);
+        }
+
+        /* Color classes for each multiplier */
+        .color-1 { background: linear-gradient(145deg, #e74c3c, #c0392b); }
+        .color-2 { background: linear-gradient(145deg, #e67e22, #d35400); }
+        .color-3 { background: linear-gradient(145deg, #f1c40f, #f39c12); }
+        .color-4 { background: linear-gradient(145deg, #2ecc71, #27ae60); }
+        .color-5 { background: linear-gradient(145deg, #3498db, #2980b9); }
+        .color-6 { background: linear-gradient(145deg, #9b59b6, #8e44ad); }
+        .color-7 { background: linear-gradient(145deg, #1abc9c, #16a085); }
+        .color-8 { background: linear-gradient(145deg, #e91e63, #c2185b); }
+        .color-9 { background: linear-gradient(145deg, #00bcd4, #0097a7); }
+        .color-10 { background: linear-gradient(145deg, #ff5722, #e64a19); }
+
+        /* Navigation arrows */
+        .nav-arrows {
+            display: flex;
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .nav-arrow {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255,255,255,0.2);
+            color: white;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            transition: all 0.3s;
+        }
+        .nav-arrow:hover { transform: scale(1.1); background: rgba(255,255,255,0.3); }
+        .nav-arrow:disabled { opacity: 0.3; cursor: not-allowed; transform: none; }
+
+        .home-btn {
+            position: fixed; bottom: 15px; left: 15px;
+            width: 45px; height: 45px;
+            border-radius: 50%; border: none;
+            font-size: 22px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            background: linear-gradient(145deg, #667eea, #764ba2);
+            color: white; text-decoration: none;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            transition: all 0.3s; z-index: 10;
+        }
+        .home-btn:hover { transform: scale(1.15); }
+
+        /* Progress indicator */
+        .progress-indicator {
+            display: flex;
+            gap: 4px;
+            margin-top: 10px;
+        }
+        .progress-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.3);
+            transition: all 0.3s;
+        }
+        .progress-dot.active {
+            background: white;
+            transform: scale(1.2);
+        }
+        .progress-dot.completed {
+            background: rgba(255,255,255,0.7);
+        }
+
+        /* Responsive */
+        @media (max-height: 700px) {
+            :root { --block-size: 28px; }
+            .tab-btn { width: 38px; height: 38px; font-size: 16px; }
+            .equation-display { font-size: 24px; min-height: 40px; }
+        }
+        @media (max-width: 450px) {
+            :root { --block-size: 26px; }
+            .tab-btn { width: 34px; height: 34px; font-size: 14px; }
+            .controls { top: 5px; left: 5px; }
+            .control-panel { padding: 5px; }
+            .control-btn { padding: 4px 6px; font-size: 10px; }
+            .nav-hint { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <div class="stars" id="stars"></div>
+
+    <div class="controls">
+        <div class="control-panel">
+            <label id="labelLang">🌐 语言</label>
+            <button class="control-btn active" data-lang="chinese" onclick="initSpeechOnInteraction(); setLanguage('chinese')">🇨🇳 中文</button>
+            <button class="control-btn" data-lang="english" onclick="initSpeechOnInteraction(); setLanguage('english')">🇺🇸 EN</button>
+        </div>
+        <div class="control-panel">
+            <label id="labelDirection">📐 方向</label>
+            <button class="control-btn active" data-direction="column" onclick="setDirection('column')" id="btnDirectionColumn">列模式</button>
+            <button class="control-btn" data-direction="row" onclick="setDirection('row')" id="btnDirectionRow">行模式</button>
+        </div>
+        <div class="control-panel">
+            <label id="labelAuto">⏩ 自动</label>
+            <button class="control-btn" data-auto="true" onclick="setAutoMode(true)" id="btnAutoOn">开启</button>
+            <button class="control-btn active" data-auto="false" onclick="setAutoMode(false)" id="btnAutoOff">关闭</button>
+        </div>
+        <div class="control-panel">
+            <label id="labelAudio">🔊 声音</label>
+            <button class="control-btn active" data-audio="true" onclick="setAudioEnabled(true)" id="btnAudioOn">开启</button>
+            <button class="control-btn" data-audio="false" onclick="setAudioEnabled(false)" id="btnAudioOff">关闭</button>
+        </div>
+        <div class="control-panel">
+            <label id="labelLabels">🏷️ 标签</label>
+            <button class="control-btn active" data-labels="true" onclick="setShowLabels(true)" id="btnLabelsOn">显示</button>
+            <button class="control-btn" data-labels="false" onclick="setShowLabels(false)" id="btnLabelsOff">隐藏</button>
+        </div>
+    </div>
+
+    <div class="nav-hint" id="navHint">→↓ 下一个<br>←↑ 上一个</div>
+
+    <div class="main-container">
+        <div class="tabs">
+            <button class="tab-btn tab-1" data-num="1" onclick="selectTab(1)">1</button>
+            <button class="tab-btn tab-2" data-num="2" onclick="selectTab(2)">2</button>
+            <button class="tab-btn tab-3" data-num="3" onclick="selectTab(3)">3</button>
+            <button class="tab-btn tab-4" data-num="4" onclick="selectTab(4)">4</button>
+            <button class="tab-btn tab-5" data-num="5" onclick="selectTab(5)">5</button>
+            <button class="tab-btn tab-6" data-num="6" onclick="selectTab(6)">6</button>
+            <button class="tab-btn tab-7" data-num="7" onclick="selectTab(7)">7</button>
+            <button class="tab-btn tab-8" data-num="8" onclick="selectTab(8)">8</button>
+            <button class="tab-btn tab-9" data-num="9" onclick="selectTab(9)">9</button>
+            <button class="tab-btn tab-10" data-num="10" onclick="selectTab(10)">10</button>
+        </div>
+
+        <div class="grid-wrapper">
+            <div class="equation-display" id="equationDisplay"></div>
+            <div class="grid-container">
+                <div class="top-labels" id="topLabels">
+                    <div class="top-label">1</div>
+                    <div class="top-label">2</div>
+                    <div class="top-label">3</div>
+                    <div class="top-label">4</div>
+                    <div class="top-label">5</div>
+                    <div class="top-label">6</div>
+                    <div class="top-label">7</div>
+                    <div class="top-label">8</div>
+                    <div class="top-label">9</div>
+                    <div class="top-label">10</div>
+                </div>
+                <div class="grid-with-labels">
+                    <div class="left-labels" id="leftLabels">
+                        <div class="left-label">1</div>
+                        <div class="left-label">2</div>
+                        <div class="left-label">3</div>
+                        <div class="left-label">4</div>
+                        <div class="left-label">5</div>
+                        <div class="left-label">6</div>
+                        <div class="left-label">7</div>
+                        <div class="left-label">8</div>
+                        <div class="left-label">9</div>
+                        <div class="left-label">10</div>
+                    </div>
+                    <div class="multiplication-grid" id="grid"></div>
+                </div>
+            </div>
+            <div class="progress-indicator" id="progressIndicator"></div>
+            <div class="nav-arrows">
+                <button class="nav-arrow" id="btnPrev" onclick="navigatePrev()">◀</button>
+                <button class="nav-arrow" id="btnNext" onclick="navigateNext()">▶</button>
+            </div>
+        </div>
+    </div>
+
+    <a href="index.html" class="home-btn" id="homeBtn" title="首页">🏠</a>
+
+    <script>
+        let currentMultiplier = 1;
+        let currentPosition = 0; // 0 means nothing highlighted, 1-10 are the positions
+        let direction = 'column'; // 'column' or 'row'
+        let language = 'chinese';
+        let audioEnabled = true;
+        let autoMode = false;
+        let showLabels = true;
+        let autoTimer = null;
+        let speechInitialized = false;
+        let cachedVoices = [];
+        let voicesLoaded = false;
+        let isSpeaking = false;
+
+        // Settings persistence
+        const STORAGE_KEY = 'numberblocks_multiplication_settings';
+
+        function saveSettings() {
+            const settings = {
+                language: language,
+                direction: direction,
+                audioEnabled: audioEnabled,
+                autoMode: autoMode,
+                showLabels: showLabels,
+                currentMultiplier: currentMultiplier
+            };
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+            } catch (e) {
+                console.warn('Could not save settings:', e);
+            }
+        }
+
+        function loadSettings() {
+            try {
+                const saved = localStorage.getItem(STORAGE_KEY);
+                if (saved) {
+                    const settings = JSON.parse(saved);
+                    if (settings.language) language = settings.language;
+                    if (settings.direction) direction = settings.direction;
+                    if (typeof settings.audioEnabled === 'boolean') audioEnabled = settings.audioEnabled;
+                    if (typeof settings.autoMode === 'boolean') autoMode = settings.autoMode;
+                    if (typeof settings.showLabels === 'boolean') showLabels = settings.showLabels;
+                    if (settings.currentMultiplier >= 1 && settings.currentMultiplier <= 10) {
+                        currentMultiplier = settings.currentMultiplier;
+                    }
+                }
+            } catch (e) {
+                console.warn('Could not load settings:', e);
+            }
+        }
+
+        // Chinese number mappings for 九九乘法表
+        const chineseNumbers = { 
+            0:'零', 1:'一', 2:'二', 3:'三', 4:'四', 
+            5:'五', 6:'六', 7:'七', 8:'八', 9:'九', 10:'十' 
+        };
+
+        // Get Chinese reading for numbers (for results like 12, 21, etc.)
+        function getChineseResult(num) {
+            if (num <= 10) return chineseNumbers[num];
+            if (num < 20) return '十' + (num % 10 === 0 ? '' : chineseNumbers[num % 10]);
+            if (num < 100) {
+                const tens = Math.floor(num / 10);
+                const ones = num % 10;
+                return chineseNumbers[tens] + '十' + (ones === 0 ? '' : chineseNumbers[ones]);
+            }
+            return '一百';
+        }
+
+        // 九九乘法表 format: "二三得六", "三七二十一"
+        function getChineseMultiplication(a, b, result) {
+            // In 九九乘法表, smaller number comes first
+            const first = Math.min(a, b);
+            const second = Math.max(a, b);
+            
+            const firstCh = chineseNumbers[first];
+            const secondCh = chineseNumbers[second];
+            
+            // Result pronunciation
+            let resultCh;
+            if (result <= 10) {
+                resultCh = '得' + chineseNumbers[result];
+            } else if (result < 20) {
+                // 11-19: 十一, 十二, etc.
+                resultCh = '十' + (result % 10 === 0 ? '' : chineseNumbers[result % 10]);
+            } else {
+                // 20 and above
+                const tens = Math.floor(result / 10);
+                const ones = result % 10;
+                if (ones === 0) {
+                    // Multiples of 10: 二十, 三十, etc.
+                    resultCh = chineseNumbers[tens] + '十';
+                } else {
+                    // Others: 二十一, etc.
+                    resultCh = chineseNumbers[tens] + '十' + chineseNumbers[ones];
+                }
+            }
+            
+            return firstCh + secondCh + resultCh;
+        }
+
+        function loadVoices() {
+            return new Promise(resolve => {
+                if (!('speechSynthesis' in window)) {
+                    console.warn('Speech synthesis not supported');
+                    resolve();
+                    return;
+                }
+                
+                cachedVoices = speechSynthesis.getVoices();
+                if (cachedVoices.length > 0) {
+                    voicesLoaded = true;
+                    resolve();
+                    return;
+                }
+                
+                const onVoicesChanged = () => {
+                    cachedVoices = speechSynthesis.getVoices();
+                    if (cachedVoices.length > 0) {
+                        voicesLoaded = true;
+                        resolve();
+                    }
+                };
+                
+                speechSynthesis.onvoiceschanged = onVoicesChanged;
+                
+                setTimeout(() => {
+                    if (!voicesLoaded) {
+                        cachedVoices = speechSynthesis.getVoices();
+                        voicesLoaded = cachedVoices.length > 0;
+                        resolve();
+                    }
+                }, 1000);
+            });
+        }
+
+        function findVoice(lang) {
+            if (cachedVoices.length === 0) {
+                cachedVoices = speechSynthesis.getVoices();
+            }
+            if (lang === 'chinese') {
+                return cachedVoices.find(v => v.lang.startsWith('zh-CN')) || 
+                       cachedVoices.find(v => v.lang.startsWith('zh')) ||
+                       cachedVoices.find(v => v.lang.includes('Chinese'));
+            }
+            return cachedVoices.find(v => v.lang === 'en-US') || 
+                   cachedVoices.find(v => v.lang.startsWith('en')) ||
+                   cachedVoices.find(v => v.lang.includes('English'));
+        }
+
+        function keepSpeechAlive() {
+            if (speechSynthesis.speaking) {
+                speechSynthesis.pause();
+                speechSynthesis.resume();
+            }
+        }
+        setInterval(keepSpeechAlive, 10000);
+
+        function initSpeechOnInteraction() {
+            if (speechInitialized) return;
+            speechInitialized = true;
+            const utterance = new SpeechSynthesisUtterance('');
+            speechSynthesis.speak(utterance);
+        }
+
+        async function speak(text, lang) {
+            if (!('speechSynthesis' in window) || !audioEnabled) {
+                isSpeaking = false;
+                return Promise.resolve();
+            }
+            
+            return new Promise((resolve) => {
+                try {
+                    speechSynthesis.cancel();
+                    
+                    setTimeout(() => {
+                        speechSynthesis.resume();
+                        
+                        const utterance = new SpeechSynthesisUtterance(text);
+                        utterance.rate = 0.8;
+                        utterance.pitch = 1.1;
+                        utterance.lang = lang === 'chinese' ? 'zh-CN' : 'en-US';
+                        
+                        const voice = findVoice(lang);
+                        if (voice) {
+                            utterance.voice = voice;
+                        }
+                        
+                        utterance.onend = () => {
+                            isSpeaking = false;
+                            resolve();
+                        };
+                        
+                        utterance.onerror = () => {
+                            isSpeaking = false;
+                            resolve();
+                        };
+                        
+                        isSpeaking = true;
+                        speechSynthesis.speak(utterance);
+                        
+                        // Fallback timeout in case onend doesn't fire
+                        setTimeout(() => {
+                            if (isSpeaking) {
+                                isSpeaking = false;
+                                resolve();
+                            }
+                        }, 3000);
+                    }, 100);
+                } catch (e) {
+                    console.warn('Speech failed:', e);
+                    isSpeaking = false;
+                    resolve();
+                }
+            });
+        }
+
+        // English number words
+        const englishNumbers = {
+            1: 'one', 2: 'two', 3: 'three', 4: 'four', 5: 'five',
+            6: 'six', 7: 'seven', 8: 'eight', 9: 'nine', 10: 'ten'
+        };
+        
+        // Plural form for "X threes", "X fours", etc.
+        const englishPlurals = {
+            1: 'one', 2: 'twos', 3: 'threes', 4: 'fours', 5: 'fives',
+            6: 'sixes', 7: 'sevens', 8: 'eights', 9: 'nines', 10: 'tens'
+        };
+        
+        // Get English result (11-100)
+        function getEnglishResult(num) {
+            const ones = ['', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine'];
+            const teens = ['ten', 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 
+                          'sixteen', 'seventeen', 'eighteen', 'nineteen'];
+            const tens = ['', '', 'twenty', 'thirty', 'forty', 'fifty', 
+                         'sixty', 'seventy', 'eighty', 'ninety'];
+            
+            if (num <= 0) return 'zero';
+            if (num < 10) return ones[num];
+            if (num < 20) return teens[num - 10];
+            if (num < 100) {
+                const t = Math.floor(num / 10);
+                const o = num % 10;
+                return o === 0 ? tens[t] : tens[t] + '-' + ones[o];
+            }
+            return 'one hundred';
+        }
+        
+        // English multiplication: "seven threes are twenty-one"
+        function getEnglishMultiplication(multiplier, position, result) {
+            const count = englishNumbers[position];
+            const group = position === 1 ? englishNumbers[multiplier] : englishPlurals[multiplier];
+            const resultWord = getEnglishResult(result);
+            const verb = position === 1 ? 'is' : 'are';
+            
+            return `${count} ${group} ${verb} ${resultWord}`;
+        }
+
+        function speakEquation(multiplier, position) {
+            if (!speechInitialized || !audioEnabled) return Promise.resolve();
+            
+            const result = multiplier * position;
+            let text;
+            
+            if (language === 'chinese') {
+                text = getChineseMultiplication(position, multiplier, result);
+            } else {
+                text = getEnglishMultiplication(multiplier, position, result);
+            }
+            
+            return speak(text, language);
+        }
+
+        function createStars() {
+            const starsContainer = document.getElementById('stars');
+            const starCount = 80;
+            
+            for (let i = 0; i < starCount; i++) {
+                const star = document.createElement('div');
+                star.className = 'star';
+                star.style.left = Math.random() * 100 + '%';
+                star.style.top = Math.random() * 100 + '%';
+                star.style.width = (Math.random() * 3 + 1) + 'px';
+                star.style.height = star.style.width;
+                star.style.animationDelay = Math.random() * 2 + 's';
+                star.style.animationDuration = (Math.random() * 2 + 1) + 's';
+                starsContainer.appendChild(star);
+            }
+        }
+
+        function selectTab(num) {
+            initSpeechOnInteraction();
+            currentMultiplier = num;
+            currentPosition = 0;
+            saveSettings();
+            
+            // Update tab buttons
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.toggle('active', parseInt(btn.dataset.num) === num);
+            });
+            
+            // Clear auto timer
+            clearAutoTimer();
+            
+            renderGrid();
+            updateEquationDisplay();
+            updateProgressIndicator();
+            updateNavigationButtons();
+            
+            // Auto-start after 0.2 seconds if auto mode is on
+            if (autoMode) {
+                autoTimer = setTimeout(() => {
+                    autoTimer = null;
+                    navigateNext();
+                }, 200);
+            }
+        }
+
+        function renderGrid() {
+            const grid = document.getElementById('grid');
+            grid.innerHTML = '';
+            
+            const m = currentMultiplier;
+            
+            // Create 10x10 grid
+            // In column mode: m rows, 10 columns
+            // In row mode: 10 rows, m columns
+            for (let row = 0; row < 10; row++) {
+                for (let col = 0; col < 10; col++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'grid-cell';
+                    cell.dataset.row = row;
+                    cell.dataset.col = col;
+                    
+                    // Determine if this cell should be a block
+                    let isBlock = false;
+                    let position = 0; // 1-10 for blocks
+                    
+                    if (direction === 'column') {
+                        // Column mode: m rows × 10 columns
+                        // Each column represents position (1-10)
+                        // Show m blocks per column (rows 0 to m-1)
+                        if (row < m) {
+                            isBlock = true;
+                            position = col + 1;
+                        }
+                    } else {
+                        // Row mode: 10 rows × m columns  
+                        // Each row represents position (1-10)
+                        // Show m blocks per row (cols 0 to m-1)
+                        if (col < m) {
+                            isBlock = true;
+                            position = row + 1;
+                        }
+                    }
+                    
+                    if (isBlock) {
+                        // Each position gets a different color
+                        const colorClass = `color-${position}`;
+                        cell.classList.add('block', colorClass);
+                        cell.dataset.position = position;
+                        
+                        // All blocks start inactive
+                        if (currentPosition === 0) {
+                            cell.classList.add('inactive');
+                        } else if (position <= currentPosition) {
+                            cell.classList.add('active');
+                            if (position === currentPosition) {
+                                cell.classList.add('current-highlight');
+                            }
+                        } else {
+                            cell.classList.add('inactive');
+                        }
+                    }
+                    
+                    grid.appendChild(cell);
+                }
+            }
+        }
+
+        function updateEquationDisplay() {
+            const display = document.getElementById('equationDisplay');
+            
+            if (currentPosition === 0) {
+                display.textContent = language === 'chinese' 
+                    ? `${currentMultiplier} 的乘法表` 
+                    : `${currentMultiplier} Times Table`;
+            } else {
+                const result = currentMultiplier * currentPosition;
+                display.textContent = `${currentPosition} × ${currentMultiplier} = ${result}`;
+            }
+        }
+
+        function updateProgressIndicator() {
+            const indicator = document.getElementById('progressIndicator');
+            indicator.innerHTML = '';
+            
+            for (let i = 1; i <= 10; i++) {
+                const dot = document.createElement('div');
+                dot.className = 'progress-dot';
+                if (i < currentPosition) {
+                    dot.classList.add('completed');
+                } else if (i === currentPosition) {
+                    dot.classList.add('active');
+                }
+                indicator.appendChild(dot);
+            }
+        }
+
+        function updateNavigationButtons() {
+            document.getElementById('btnPrev').disabled = currentPosition <= 0;
+            document.getElementById('btnNext').disabled = currentPosition >= 10;
+        }
+
+        function updateGridHighlighting() {
+            const cells = document.querySelectorAll('.grid-cell.block');
+            
+            cells.forEach(cell => {
+                const position = parseInt(cell.dataset.position);
+                
+                cell.classList.remove('inactive', 'active', 'current-highlight');
+                
+                if (currentPosition === 0) {
+                    cell.classList.add('inactive');
+                } else if (position <= currentPosition) {
+                    cell.classList.add('active');
+                    if (position === currentPosition) {
+                        cell.classList.add('current-highlight');
+                    }
+                } else {
+                    cell.classList.add('inactive');
+                }
+            });
+        }
+
+        function clearAutoTimer() {
+            if (autoTimer) {
+                clearTimeout(autoTimer);
+                autoTimer = null;
+            }
+        }
+
+        function startAutoTimer() {
+            if (!autoMode || currentPosition >= 10) return;
+            
+            clearAutoTimer();
+            autoTimer = setTimeout(() => {
+                autoTimer = null;
+                navigateNext();
+            }, 200); // 0.2 seconds after voice ends
+        }
+
+        async function navigateNext() {
+            initSpeechOnInteraction();
+            clearAutoTimer();
+            
+            if (currentPosition >= 10) return;
+            
+            currentPosition++;
+            updateGridHighlighting();
+            updateEquationDisplay();
+            updateProgressIndicator();
+            updateNavigationButtons();
+            
+            // Speak the equation and then start auto timer
+            await speakEquation(currentMultiplier, currentPosition);
+            
+            if (autoMode && currentPosition < 10) {
+                startAutoTimer();
+            }
+        }
+
+        async function navigatePrev() {
+            initSpeechOnInteraction();
+            clearAutoTimer();
+            
+            if (currentPosition <= 0) return;
+            
+            currentPosition--;
+            updateGridHighlighting();
+            updateEquationDisplay();
+            updateProgressIndicator();
+            updateNavigationButtons();
+            
+            if (currentPosition > 0) {
+                // Speak the equation of current position
+                await speakEquation(currentMultiplier, currentPosition);
+            }
+        }
+
+        function setLanguage(lang, skipSave) {
+            language = lang;
+            document.querySelectorAll('[data-lang]').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.lang === lang);
+            });
+            if (!skipSave) saveSettings();
+            
+            // Translate UI
+            const translations = {
+                chinese: {
+                    labelLang: '🌐 语言',
+                    labelDirection: '📐 方向',
+                    labelAuto: '⏩ 自动',
+                    labelAudio: '🔊 声音',
+                    labelLabels: '🏷️ 标签',
+                    btnDirectionColumn: '列模式',
+                    btnDirectionRow: '行模式',
+                    btnAutoOn: '开启',
+                    btnAutoOff: '关闭',
+                    btnAudioOn: '开启',
+                    btnAudioOff: '关闭',
+                    btnLabelsOn: '显示',
+                    btnLabelsOff: '隐藏',
+                    homeTitle: '首页',
+                    navHint: '→↓ 下一个<br>←↑ 上一个'
+                },
+                english: {
+                    labelLang: '🌐 Lang',
+                    labelDirection: '📐 Mode',
+                    labelAuto: '⏩ Auto',
+                    labelAudio: '🔊 Audio',
+                    labelLabels: '🏷️ Labels',
+                    btnDirectionColumn: 'Column',
+                    btnDirectionRow: 'Row',
+                    btnAutoOn: 'On',
+                    btnAutoOff: 'Off',
+                    btnAudioOn: 'On',
+                    btnAudioOff: 'Off',
+                    btnLabelsOn: 'Show',
+                    btnLabelsOff: 'Hide',
+                    homeTitle: 'Home',
+                    navHint: '→↓ Next<br>←↑ Prev'
+                }
+            };
+            
+            const t = translations[lang];
+            document.getElementById('labelLang').textContent = t.labelLang;
+            document.getElementById('labelDirection').textContent = t.labelDirection;
+            document.getElementById('labelAuto').textContent = t.labelAuto;
+            document.getElementById('labelAudio').textContent = t.labelAudio;
+            document.getElementById('labelLabels').textContent = t.labelLabels;
+            document.getElementById('btnDirectionColumn').textContent = t.btnDirectionColumn;
+            document.getElementById('btnDirectionRow').textContent = t.btnDirectionRow;
+            document.getElementById('btnAutoOn').textContent = t.btnAutoOn;
+            document.getElementById('btnAutoOff').textContent = t.btnAutoOff;
+            document.getElementById('btnAudioOn').textContent = t.btnAudioOn;
+            document.getElementById('btnAudioOff').textContent = t.btnAudioOff;
+            document.getElementById('btnLabelsOn').textContent = t.btnLabelsOn;
+            document.getElementById('btnLabelsOff').textContent = t.btnLabelsOff;
+            document.getElementById('homeBtn').title = t.homeTitle;
+            document.getElementById('navHint').innerHTML = t.navHint;
+            
+            updateEquationDisplay();
+        }
+
+        function setDirection(dir, skipSave) {
+            direction = dir;
+            document.querySelectorAll('[data-direction]').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.direction === dir);
+            });
+            if (!skipSave) saveSettings();
+            
+            // Reset position and re-render
+            currentPosition = 0;
+            clearAutoTimer();
+            renderGrid();
+            updateEquationDisplay();
+            updateProgressIndicator();
+            updateNavigationButtons();
+        }
+
+        function setAutoMode(enabled, skipSave) {
+            autoMode = enabled;
+            document.querySelectorAll('[data-auto]').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.auto === String(enabled));
+            });
+            if (!skipSave) saveSettings();
+            
+            if (!enabled) {
+                clearAutoTimer();
+            }
+        }
+
+        function setAudioEnabled(enabled, skipSave) {
+            audioEnabled = enabled;
+            document.querySelectorAll('[data-audio]').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.audio === String(enabled));
+            });
+            if (!enabled) {
+                speechSynthesis.cancel();
+                clearAutoTimer();
+            }
+            if (!skipSave) saveSettings();
+        }
+
+        function setShowLabels(show, skipSave) {
+            showLabels = show;
+            document.querySelectorAll('[data-labels]').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.labels === String(show));
+            });
+            document.getElementById('topLabels').classList.toggle('hidden', !show);
+            document.getElementById('leftLabels').classList.toggle('hidden', !show);
+            if (!skipSave) saveSettings();
+        }
+
+        // Keyboard navigation
+        document.addEventListener('keydown', e => {
+            initSpeechOnInteraction();
+            
+            if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+                e.preventDefault();
+                navigateNext();
+            } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+                e.preventDefault();
+                navigatePrev();
+            } else if (e.key >= '1' && e.key <= '9') {
+                selectTab(parseInt(e.key));
+            } else if (e.key === '0') {
+                selectTab(10);
+            }
+        });
+
+        // Touch/click initialization
+        document.addEventListener('click', () => initSpeechOnInteraction(), { once: true });
+
+        // Initialize
+        createStars();
+        loadSettings();
+        loadVoices().then(() => {
+            setLanguage(language, true);
+            setDirection(direction, true);
+            setAutoMode(autoMode, true);
+            setAudioEnabled(audioEnabled, true);
+            setShowLabels(showLabels, true);
+            selectTab(currentMultiplier);
+        });
+    </script>
+</body>
+</html>
+
