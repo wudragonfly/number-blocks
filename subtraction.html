@@ -316,6 +316,21 @@
             <button class="control-btn" data-lang="english" onclick="initSpeechOnInteraction(); setLanguage('english')">🇺🇸 EN</button>
         </div>
         <div class="control-panel">
+            <label id="labelAudio">🔊 声音</label>
+            <button class="control-btn active" data-audio="true" onclick="setAudioEnabled(true)" id="btnAudioOn">开启</button>
+            <button class="control-btn" data-audio="false" onclick="setAudioEnabled(false)" id="btnAudioOff">关闭</button>
+        </div>
+        <div class="control-panel">
+            <label id="labelAuto">⏩ 自动</label>
+            <button class="control-btn" data-auto="true" onclick="setAutoAdvance(true)" id="btnAutoOn">开启</button>
+            <button class="control-btn active" data-auto="false" onclick="setAutoAdvance(false)" id="btnAutoOff">关闭</button>
+        </div>
+        <div class="control-panel">
+            <label id="labelMode">📝 模式</label>
+            <button class="control-btn active" data-mode="random" onclick="setQuizMode('random')" id="btnModeRandom">随机</button>
+            <button class="control-btn" data-mode="custom" onclick="setQuizMode('custom')" id="btnModeCustom">自定义</button>
+        </div>
+        <div class="control-panel">
             <label id="labelRange">🔢 范围</label>
             <button class="control-btn active" data-range="5" onclick="initSpeechOnInteraction(); setRange(5)">0~5</button>
             <button class="control-btn" data-range="10" onclick="initSpeechOnInteraction(); setRange(10)">0~10</button>
@@ -331,21 +346,6 @@
             <label id="labelLabels">🏷️ 标签</label>
             <button class="control-btn active" data-labels="true" onclick="setShowLabels(true)" id="btnLabelsShow">显示</button>
             <button class="control-btn" data-labels="false" onclick="setShowLabels(false)" id="btnLabelsHide">隐藏</button>
-        </div>
-        <div class="control-panel">
-            <label id="labelAuto">⏩ 自动</label>
-            <button class="control-btn" data-auto="true" onclick="setAutoAdvance(true)" id="btnAutoOn">开启</button>
-            <button class="control-btn active" data-auto="false" onclick="setAutoAdvance(false)" id="btnAutoOff">关闭</button>
-        </div>
-        <div class="control-panel">
-            <label id="labelAudio">🔊 声音</label>
-            <button class="control-btn active" data-audio="true" onclick="setAudioEnabled(true)" id="btnAudioOn">开启</button>
-            <button class="control-btn" data-audio="false" onclick="setAudioEnabled(false)" id="btnAudioOff">关闭</button>
-        </div>
-        <div class="control-panel">
-            <label id="labelMode">📝 模式</label>
-            <button class="control-btn active" data-mode="random" onclick="setQuizMode('random')" id="btnModeRandom">随机</button>
-            <button class="control-btn" data-mode="custom" onclick="setQuizMode('custom')" id="btnModeCustom">自定义</button>
         </div>
     </div>
 

@@ -368,24 +368,24 @@
             <button class="control-btn" data-lang="english" onclick="initSpeechOnInteraction(); setLanguage('english')">🇺🇸 EN</button>
         </div>
         <div class="control-panel">
+            <label id="labelAudio">🔊 声音</label>
+            <button class="control-btn active" data-audio="true" onclick="setAudioEnabled(true)" id="btnAudioOn">开启</button>
+            <button class="control-btn" data-audio="false" onclick="setAudioEnabled(false)" id="btnAudioOff">关闭</button>
+        </div>
+        <div class="control-panel" id="autoModePanel" style="display: none;">
+            <label id="labelAutoMode">⏩ 自动</label>
+            <button class="control-btn" data-automode="auto" onclick="setAutoMode('auto')" id="btnAutoModeAuto">开启</button>
+            <button class="control-btn active" data-automode="manual" onclick="setAutoMode('manual')" id="btnAutoModeManual">关闭</button>
+        </div>
+        <div class="control-panel">
             <label id="labelMode">🎮 模式</label>
             <button class="control-btn active" data-mode="learn" onclick="setGameMode('learn')" id="btnModeLearn">学习</button>
             <button class="control-btn" data-mode="game" onclick="setGameMode('game')" id="btnModeGame">游戏</button>
-        </div>
-        <div class="control-panel" id="autoModePanel" style="display: none;">
-            <label id="labelAutoMode">⏩ 游戏</label>
-            <button class="control-btn" data-automode="auto" onclick="setAutoMode('auto')" id="btnAutoModeAuto">自动</button>
-            <button class="control-btn active" data-automode="manual" onclick="setAutoMode('manual')" id="btnAutoModeManual">手动</button>
         </div>
         <div class="control-panel">
             <label id="labelLabels">🏷️ 标签</label>
             <button class="control-btn active" data-labels="true" onclick="setShowLabels(true)" id="btnLabelsOn">显示</button>
             <button class="control-btn" data-labels="false" onclick="setShowLabels(false)" id="btnLabelsOff">隐藏</button>
-        </div>
-        <div class="control-panel">
-            <label id="labelAudio">🔊 声音</label>
-            <button class="control-btn active" data-audio="true" onclick="setAudioEnabled(true)" id="btnAudioOn">开启</button>
-            <button class="control-btn" data-audio="false" onclick="setAudioEnabled(false)" id="btnAudioOff">关闭</button>
         </div>
     </div>
 
@@ -944,13 +944,13 @@
                 chinese: {
                     labelLang: '🌐 语言',
                     labelMode: '🎮 模式',
-                    labelAutoMode: '⏩ 游戏',
+                    labelAutoMode: '⏩ 自动',
                     labelLabels: '🏷️ 标签',
                     labelAudio: '🔊 声音',
                     btnModeLearn: '学习',
                     btnModeGame: '游戏',
-                    btnAutoModeAuto: '自动',
-                    btnAutoModeManual: '手动',
+                    btnAutoModeAuto: '开启',
+                    btnAutoModeManual: '关闭',
                     btnLabelsOn: '显示',
                     btnLabelsOff: '隐藏',
                     btnAudioOn: '开启',
@@ -961,13 +961,13 @@
                 english: {
                     labelLang: '🌐 Lang',
                     labelMode: '🎮 Mode',
-                    labelAutoMode: '⏩ Game',
+                    labelAutoMode: '⏩ Auto',
                     labelLabels: '🏷️ Labels',
                     labelAudio: '🔊 Audio',
                     btnModeLearn: 'Learn',
                     btnModeGame: 'Game',
-                    btnAutoModeAuto: 'Auto',
-                    btnAutoModeManual: 'Manual',
+                    btnAutoModeAuto: 'On',
+                    btnAutoModeManual: 'Off',
                     btnLabelsOn: 'Show',
                     btnLabelsOff: 'Hide',
                     btnAudioOn: 'On',
