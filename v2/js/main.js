@@ -39,7 +39,12 @@ function syncSettingsToShell() {
 onSettings(syncSettingsToShell);
 syncSettingsToShell();
 
-btnHome.addEventListener('click', () => navigate('/'));
+// hierarchical back button: in a game → v2 home; on v2 home → landing page
+let onHomePage = false;
+btnHome.addEventListener('click', () => {
+  if (onHomePage) window.location.href = '../';
+  else navigate('/');
+});
 btnAudio.addEventListener('click', () => {
   setSetting('audio.master', !getSettings().audio.master);
   sfx.tap();
@@ -60,7 +65,10 @@ initTapToSpeak();
 
 function renderHome() {
   currentGame = null;
-  btnHome.hidden = true;
+  onHomePage = true;
+  btnHome.hidden = false;
+  btnHome.textContent = '⬅️';
+  btnHome.setAttribute('aria-label', '返回主页 Back to main page');
   pageTitle.replaceChildren(bi(STR.appName, { row: true }));
   document.title = '数字方块 · Number Blocks';
   app.classList.add('scrollable');
@@ -118,7 +126,10 @@ async function mountGame(id, level = null) {
   currentMount = null;
   stopSpeech();
 
+  onHomePage = false;
   btnHome.hidden = false;
+  btnHome.textContent = '🏠';
+  btnHome.setAttribute('aria-label', 'Home 主页');
   app.classList.remove('scrollable');
   pageTitle.replaceChildren(bi(meta.name, { row: true }));
   document.title = `${meta.name.zh} ${meta.name.en} · Number Blocks`;
