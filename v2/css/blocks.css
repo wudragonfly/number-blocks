@@ -1,0 +1,244 @@
+/* ============================================================
+   blocks.css — number-block characters & math manipulatives
+   ============================================================ */
+
+.nb-char {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  position: relative;
+}
+
+.nb-char svg { display: block; overflow: visible; }
+
+.nb-char .nb-label {
+  font-weight: 800;
+  font-size: 20px;
+  color: var(--ink);
+  text-shadow: 0 2px 0 rgba(255, 255, 255, 0.7);
+  line-height: 1;
+}
+
+/* idle bob for hero / celebration characters */
+.nb-idle svg { animation: nb-bounce 2.6s ease-in-out infinite; }
+
+/* blinking eyes (group carries this class from the renderer) */
+.nb-eyes { animation: nb-blink 4.6s infinite; transform-box: fill-box; transform-origin: center; }
+
+/* single block cells (tap-to-count etc.) */
+.cell-btn {
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  transition: transform 0.12s ease;
+  position: relative;
+}
+.cell-btn:active { transform: scale(0.9); }
+.cell-btn.counted { pointer-events: none; }
+.cell-btn .count-tag {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  font-weight: 800;
+  color: #fff;
+  text-shadow: 0 2px 3px rgba(0, 0, 0, 0.45);
+  animation: nb-pop-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  pointer-events: none;
+}
+
+/* leaving blocks (subtraction) */
+.hop-away { animation: nb-hop-away 0.9s ease-in forwards; }
+
+/* merge animation (addition) */
+.merge-left  { animation: merge-left 0.8s ease forwards; }
+.merge-right { animation: merge-right 0.8s ease forwards; }
+@keyframes merge-left  { to { transform: translateX(52%) scale(0.72); opacity: 0; } }
+@keyframes merge-right { to { transform: translateX(-52%) scale(0.72); opacity: 0; } }
+
+/* glowing highlight on marked blocks */
+.nb-glow { filter: drop-shadow(0 0 8px rgba(255, 214, 0, 0.95)); }
+
+/* pulse hint */
+@keyframes nb-pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.07); } }
+.nb-pulse { animation: nb-pulse 0.8s ease-in-out 3; }
+
+/* ---------------- fraction bar ---------------- */
+
+.frac-bar {
+  display: flex;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 4px solid #4a4a68;
+  background: #fff;
+  box-shadow: var(--shadow-soft);
+}
+.frac-seg {
+  flex: 1;
+  border: none;
+  border-right: 3px solid #4a4a68;
+  background: #fdfdfd;
+  cursor: default;
+  transition: background 0.15s ease;
+  padding: 0;
+  min-width: 0;
+}
+.frac-seg:last-child { border-right: none; }
+.frac-seg.shaded { background: var(--seg-color, var(--nb5)); }
+.frac-seg.tappable { cursor: pointer; }
+.frac-seg.tappable:active { filter: brightness(0.9); }
+
+/* stacked fraction text */
+.frac {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1.05;
+  font-weight: 800;
+  vertical-align: middle;
+}
+.frac .frac-num { padding: 0 6px; }
+.frac .frac-den { padding: 0 6px; border-top: 3.5px solid currentColor; }
+.frac-mixed { display: inline-flex; align-items: center; gap: 4px; font-weight: 800; }
+
+/* ---------------- hundred grid ---------------- */
+
+.hundred-grid {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  gap: 2px;
+  padding: 5px;
+  background: #4a4a68;
+  border-radius: 12px;
+  box-shadow: var(--shadow-soft);
+}
+.hg-cell {
+  background: #fff;
+  border-radius: 3px;
+  transition: background 0.12s ease;
+}
+.hg-cell.shaded { background: var(--seg-color, var(--nb5)); }
+
+/* ---------------- number line ---------------- */
+
+.numline { width: 100%; max-width: 640px; }
+.numline .nl-tick-label { font-size: 15px; font-weight: 800; fill: var(--ink); }
+
+/* ---------------- plates (division) ---------------- */
+
+.plates-row {
+  display: flex;
+  gap: 18px;
+  align-items: flex-end;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.plate {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+.plate .plate-dish {
+  width: 84px;
+  height: 22px;
+  border-radius: 50%;
+  background: linear-gradient(#fff, #d9dcec);
+  border: 3px solid #b8bdd6;
+  box-shadow: var(--shadow-soft);
+}
+.plate .plate-stack {
+  min-height: 40px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+.plate .plate-q {
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--ink-soft);
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+}
+
+/* ---------------- memory cards ---------------- */
+
+.mem-grid {
+  display: grid;
+  gap: 12px;
+  justify-content: center;
+  align-content: center;
+  align-items: center;
+  justify-items: center;
+  width: 100%;
+  height: 100%;
+}
+
+.mem-card {
+  perspective: 700px;
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  min-width: 0;
+  min-height: 0;
+}
+
+.mem-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  transition: transform 0.4s cubic-bezier(0.4, 1.4, 0.6, 1);
+}
+.mem-card.open .mem-inner, .mem-card.matched .mem-inner { transform: rotateY(180deg); }
+
+.mem-face {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  box-shadow: var(--shadow-soft);
+}
+.mem-front {
+  background: linear-gradient(145deg, var(--nb6), #7d7de0);
+  border: 4px solid #fff;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: clamp(26px, 5vh, 44px);
+}
+.mem-back {
+  background: #fff;
+  border: 4px solid #b9c4f5;
+  transform: rotateY(180deg);
+  font-size: clamp(22px, 4.6vh, 40px);
+  padding: 4px;
+  overflow: hidden;
+}
+.mem-card.matched .mem-back {
+  border-color: var(--good);
+  background: #eafaec;
+  animation: nb-pop-in 0.4s ease;
+}
+.mem-card.matched { pointer-events: none; }
+.mem-card:active .mem-inner { transform: scale(0.95); }
+.mem-card.open:active .mem-inner { transform: rotateY(180deg) scale(0.95); }
+
+.mem-hud {
+  display: flex;
+  justify-content: center;
+  gap: 26px;
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--ink-soft);
+  padding: 4px 0;
+}

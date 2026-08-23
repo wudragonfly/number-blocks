@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Number Blocks - Learning Games</title>
+    <script src="loader.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@700;900&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            min-height: 100vh;
+            font-family: 'Fredoka One', cursive;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* Animated stars background */
+        .stars {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            overflow: hidden;
+            z-index: 0;
+        }
+
+        .star {
+            position: absolute;
+            background: white;
+            border-radius: 50%;
+            animation: twinkle 2s infinite ease-in-out;
+        }
+
+        @keyframes twinkle {
+            0%, 100% { opacity: 0.3; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.2); }
+        }
+
+        .container {
+            position: relative;
+            z-index: 1;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 50px;
+        }
+
+        .logo {
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        .logo-block {
+            width: 60px;
+            height: 60px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            color: white;
+            font-family: 'Nunito', sans-serif;
+            font-weight: 900;
+            box-shadow: 
+                inset -4px -4px 0 rgba(0,0,0,0.2),
+                inset 4px 4px 0 rgba(255,255,255,0.3),
+                0 8px 20px rgba(0,0,0,0.3);
+            animation: bounce-in 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55) backwards;
+        }
+
+        .logo-block:nth-child(1) { background: linear-gradient(145deg, #e74c3c, #c0392b); animation-delay: 0.1s; }
+        .logo-block:nth-child(2) { background: linear-gradient(145deg, #e67e22, #d35400); animation-delay: 0.2s; height: 80px; }
+        .logo-block:nth-child(3) { background: linear-gradient(145deg, #f1c40f, #f39c12); animation-delay: 0.3s; height: 100px; }
+        .logo-block:nth-child(4) { background: linear-gradient(145deg, #2ecc71, #27ae60); animation-delay: 0.4s; height: 80px; }
+        .logo-block:nth-child(5) { background: linear-gradient(145deg, #3498db, #2980b9); animation-delay: 0.5s; }
+
+        @keyframes bounce-in {
+            0% { transform: scale(0) translateY(50px); opacity: 0; }
+            100% { transform: scale(1) translateY(0); opacity: 1; }
+        }
+
+        h1 {
+            font-size: clamp(36px, 8vw, 64px);
+            color: white;
+            text-shadow: 3px 3px 0 #e74c3c, 6px 6px 0 rgba(0,0,0,0.2);
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            font-size: clamp(16px, 3vw, 24px);
+            color: rgba(255,255,255,0.7);
+            font-family: 'Nunito', sans-serif;
+            font-weight: 700;
+        }
+
+        .games-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 30px;
+            padding: 20px 0;
+        }
+
+        .game-tile {
+            background: rgba(255,255,255,0.1);
+            border-radius: 24px;
+            padding: 30px;
+            text-decoration: none;
+            color: white;
+            transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255,255,255,0.1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .game-tile::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, transparent 100%);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .game-tile:hover {
+            transform: translateY(-10px) scale(1.02);
+            border-color: rgba(255,255,255,0.3);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+        }
+
+        .game-tile:hover::before {
+            opacity: 1;
+        }
+
+        .game-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+            filter: drop-shadow(3px 3px 5px rgba(0,0,0,0.3));
+        }
+
+        .game-title {
+            font-size: 24px;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 0 rgba(0,0,0,0.2);
+        }
+
+        .game-description {
+            font-size: 14px;
+            color: rgba(255,255,255,0.7);
+            font-family: 'Nunito', sans-serif;
+            font-weight: 700;
+            line-height: 1.5;
+        }
+
+        .game-tile.featured {
+            background: linear-gradient(135deg, rgba(231,76,60,0.3) 0%, rgba(155,89,182,0.3) 100%);
+            border-color: rgba(231,76,60,0.5);
+        }
+
+        .featured-badge {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: linear-gradient(145deg, #e74c3c, #c0392b);
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .game-tile.coming-soon {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .game-tile.coming-soon:hover {
+            transform: none;
+        }
+
+        .coming-soon-badge {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: rgba(255,255,255,0.2);
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .mini-blocks {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 15px;
+        }
+
+        .mini-block {
+            width: 24px;
+            height: 24px;
+            border-radius: 4px;
+            box-shadow: 
+                inset -2px -2px 0 rgba(0,0,0,0.2),
+                inset 2px 2px 0 rgba(255,255,255,0.3);
+        }
+
+        footer {
+            text-align: center;
+            padding: 40px 20px;
+            color: rgba(255,255,255,0.5);
+            font-family: 'Nunito', sans-serif;
+            font-size: 14px;
+        }
+
+        @media (max-width: 600px) {
+            .logo-block {
+                width: 45px;
+                height: 45px;
+                font-size: 20px;
+            }
+            .logo-block:nth-child(2) { height: 60px; }
+            .logo-block:nth-child(3) { height: 75px; }
+            .logo-block:nth-child(4) { height: 60px; }
+            
+            .game-tile {
+                padding: 20px;
+            }
+            
+            .game-icon {
+                font-size: 48px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="stars" id="stars"></div>
+
+    <div class="container">
+        <header>
+            <div class="logo">
+                <div class="logo-block">1</div>
+                <div class="logo-block">2</div>
+                <div class="logo-block">3</div>
+                <div class="logo-block">4</div>
+                <div class="logo-block">5</div>
+            </div>
+            <h1>Number Blocks</h1>
+            <p class="subtitle">Fun Learning Games for Kids! 🎮</p>
+        </header>
+
+        <div class="games-grid">
+            <a href="counting.html" class="game-tile featured">
+                <span class="featured-badge">⭐ Start Here</span>
+                <div class="game-icon">🔢</div>
+                <div class="mini-blocks">
+                    <div class="mini-block" style="background: linear-gradient(145deg, #e74c3c, #c0392b);"></div>
+                    <div class="mini-block" style="background: linear-gradient(145deg, #e67e22, #d35400);"></div>
+                    <div class="mini-block" style="background: linear-gradient(145deg, #f1c40f, #f39c12);"></div>
+                    <div class="mini-block" style="background: linear-gradient(145deg, #2ecc71, #27ae60);"></div>
+                    <div class="mini-block" style="background: linear-gradient(145deg, #3498db, #2980b9);"></div>
+                </div>
+                <h2 class="game-title">Count to 100</h2>
+                <p class="game-description">Learn numbers 1-100 with colorful blocks! See how numbers are made with tens and ones.</p>
+            </a>
+
+            <a href="addition.html" class="game-tile">
+                <div class="game-icon">➕</div>
+                <div class="mini-blocks">
+                    <div class="mini-block" style="background: linear-gradient(145deg, #9b59b6, #8e44ad);"></div>
+                    <div class="mini-block" style="background: linear-gradient(145deg, #3498db, #2980b9);"></div>
+                    <div class="mini-block" style="background: linear-gradient(145deg, #2ecc71, #27ae60);"></div>
+                </div>
+                <h2 class="game-title">Addition</h2>
+                <p class="game-description">Learn to add numbers together by combining blocks! Practice with quizzes.</p>
+            </a>
+
+            <a href="subtraction.html" class="game-tile">
+                <div class="game-icon">➖</div>
+                <div class="mini-blocks">
+                    <div class="mini-block" style="background: linear-gradient(145deg, #1abc9c, #16a085);"></div>
+                    <div class="mini-block" style="background: linear-gradient(145deg, #e91e63, #c2185b);"></div>
+                    <div class="mini-block" style="background: linear-gradient(145deg, #2ecc71, #27ae60);"></div>
+                </div>
+                <h2 class="game-title">Subtraction</h2>
+                <p class="game-description">Learn to subtract by taking away blocks! Watch them move and see what remains.</p>
+            </a>
+
+            <a href="composition.html" class="game-tile">
+                <div class="game-icon">🧩</div>
+                <div class="mini-blocks">
+                    <div class="mini-block" style="background: linear-gradient(145deg, #ecf0f1, #bdc3c7);"></div>
+                    <div class="mini-block" style="background: linear-gradient(145deg, #e74c3c, #c0392b);"></div>
+                    <div class="mini-block" style="background: linear-gradient(145deg, #3498db, #2980b9);"></div>
+                </div>
+                <h2 class="game-title">Composition</h2>
+                <p class="game-description">Learn how numbers split apart! See all the ways to make each number from 2 to 10.</p>
+            </a>
+
+            <a href="multiplication.html" class="game-tile">
+                <div class="game-icon">✖️</div>
+                <div class="mini-blocks">
+                    <div class="mini-block" style="background: linear-gradient(145deg, #f1c40f, #f39c12);"></div>
+                    <div class="mini-block" style="background: linear-gradient(145deg, #9b59b6, #8e44ad);"></div>
+                </div>
+                <h2 class="game-title">Multiplication</h2>
+                <p class="game-description">Learn the times tables with the 九九乘法表! Practice 1-10 multiplication.</p>
+            </a>
+
+            <a href="#" class="game-tile coming-soon" onclick="return false;">
+                <span class="coming-soon-badge">Coming Soon</span>
+                <div class="game-icon">🎯</div>
+                <div class="mini-blocks">
+                    <div class="mini-block" style="background: linear-gradient(145deg, #00bcd4, #0097a7);"></div>
+                    <div class="mini-block" style="background: linear-gradient(145deg, #ffeb3b, #ffc107);"></div>
+                </div>
+                <h2 class="game-title">Number Quiz</h2>
+                <p class="game-description">Test your knowledge! Can you pick the right number?</p>
+            </a>
+
+        </div>
+
+        <footer>
+            Made with ❤️ for little learners
+        </footer>
+    </div>
+
+    <script>
+        // Create twinkling stars
+        function createStars() {
+            const starsContainer = document.getElementById('stars');
+            const starCount = 100;
+            
+            for (let i = 0; i < starCount; i++) {
+                const star = document.createElement('div');
+                star.className = 'star';
+                star.style.left = Math.random() * 100 + '%';
+                star.style.top = Math.random() * 100 + '%';
+                star.style.width = (Math.random() * 3 + 1) + 'px';
+                star.style.height = star.style.width;
+                star.style.animationDelay = Math.random() * 2 + 's';
+                star.style.animationDuration = (Math.random() * 2 + 1) + 's';
+                starsContainer.appendChild(star);
+            }
+        }
+
+        createStars();
+    </script>
+</body>
+</html>
