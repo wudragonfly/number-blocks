@@ -146,6 +146,7 @@ function armWatchdog() {
 }
 
 let loggedVoices = false;
+const SPEECH_PAUSE_MS = 400;
 
 // attempt 0: picked voices · attempt 1: NO named voice, lang tag only (the
 // OS-default path that always works) · then stash for gesture replay
@@ -154,7 +155,8 @@ function queueParts(parts, rate, token, attempt = 0, onEnd) {
   try { synth.resume(); } catch { /* ignore */ }
   holdUtterances = [];
   let started = false;
-  for (const p of parts) {
+  {
+    const p = parts[0];
     const u = new SpeechSynthesisUtterance(p.text);
     if (attempt === 0) {
       const v = pickVoice(p.lang);
@@ -169,9 +171,16 @@ function queueParts(parts, rate, token, attempt = 0, onEnd) {
     u.rate = rate;
     u.pitch = 1.05;
     u.onstart = () => { started = true; unspoken = null; };
-    if (p === parts[parts.length - 1]) {
-      u.onend = () => { if (token === speakToken) onEnd?.(); };
-    }
+    u.onend = () => {
+      if (token !== speakToken) return;
+      if (parts.length === 1) {
+        onEnd?.();
+        return;
+      }
+      speakTimer = setTimeout(() => {
+        if (token === speakToken) queueParts(parts.slice(1), rate, token, 0, onEnd);
+      }, SPEECH_PAUSE_MS);
+    };
     holdUtterances.push(u);
     try { synth.speak(u); } catch { /* ignore */ }
   }
@@ -198,7 +207,7 @@ function queueParts(parts, rate, token, attempt = 0, onEnd) {
 /**
  * speak({en, zh}) — respects the language mode:
  * 'zh'/'en' speak one language; 'both' speaks 中文 then English.
- * The native speechSynthesis queue plays the parts in order.
+ * Parts play in order, with a short pause after each completed utterance.
  * An array reads each message fully before moving to the next, including both languages.
  */
 let warnedOff = false;

@@ -3,7 +3,7 @@
 Bilingual (中文/English) math games for kids aged 3–10, styled after the block
 characters kids love — counting, number bonds, + − × ÷, fractions, decimals &
 percent, and a memory match game. Voice everywhere, stars to earn, five
-difficulty levels in most games, seven in Addition, and eight in Subtraction.
+difficulty levels in most games, seven in Addition, and nine in Subtraction.
 
 **Design:** see [DESIGN.md](DESIGN.md). **Stack:** plain HTML/CSS/JS ES modules —
 no build step, no dependencies.
@@ -26,7 +26,7 @@ python3 -m http.server 8000
 
 ## Features
 
-- 🎮 9 games × 5–8 levels (age 3 → 10), one shared engine
+- 🎮 9 games × 5–9 levels (age 3 → 10), one shared engine
 - 🧩 Interactive 凑十法 / 破十法 / 平十法 with voice on every step and replayable equations
 - 🗣️ Voice via the Web Speech API — 中文 / English / 双语 (speaks both)
 - 🎵 Sound effects synthesized with WebAudio (zero audio files)

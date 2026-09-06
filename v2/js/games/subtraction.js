@@ -94,6 +94,14 @@ function regroupingOperands() {
   return [a, b];
 }
 
+function twoDigitRegroupingOperands() {
+  const aTens = randInt(2, 9);
+  const aOnes = randInt(1, 8);
+  const bTens = randInt(1, aTens - 1);
+  const bOnes = randInt(aOnes + 1, 9);
+  return [aTens * 10 + aOnes, bTens * 10 + bOnes];
+}
+
 // When a step asks for a whole-ten part, every option should be a whole ten.
 // Otherwise the shape of the number gives the answer away before any thinking.
 function wholeTenChoices(answer) {
@@ -103,11 +111,14 @@ function wholeTenChoices(answer) {
     : [answer, answer + 10, answer + 20]);
 }
 
-function placeValueSubRound(a, b) {
+function placeValueSubRound(a, b, bridgeTen = false) {
   const tensPart = Math.floor(b / 10) * 10;
   const onesPart = b % 10;
   const afterTens = a - tensPart;
   const diff = a - b;
+  const toTen = a % 10;
+  const target = afterTens - toTen;
+  const rest = onesPart - toTen;
   const correctSplit = `${tensPart} + ${onesPart}`;
   const splitChoices = shuffle([
     correctSplit,
@@ -125,7 +136,9 @@ function placeValueSubRound(a, b) {
     answer: diff,
     board(boardEl, api) {
       renderStrategyDemo(boardEl, api, {
-        method: { zh: '分步减法', en: 'Subtract in Parts' },
+        method: bridgeTen
+          ? { zh: '分步减法 · 平十法', en: 'Subtract in Parts · Bridge to Ten' }
+          : { zh: '分步减法', en: 'Subtract in Parts' },
         splitLabel: { zh: `把 ${b} 拆成整十和个位`, en: `Split ${b} into tens and ones` },
         splitValue: b,
         splitParts: [tensPart, onesPart],
@@ -157,7 +170,38 @@ function placeValueSubRound(a, b) {
             hint: { zh: `只改变十位，个位保持 ${a % 10}。`, en: `Change the tens; keep the ${a % 10} ones.` },
             focusPart: 0,
           },
-          {
+          ...(bridgeTen ? [
+            {
+              prompt: { zh: `还要减 ${onesPart}，先减几能到 ${target}？`, en: `There are ${onesPart} left to subtract. How much reaches ${target}?` },
+              question: `${afterTens} − ? = ${target}`,
+              answer: toTen,
+              equation: `${afterTens} − ${toTen} = ${target}`,
+              speak: { zh: `${numWords(afterTens).zh}减几等于${numWords(target).zh}？`, en: `${numWords(afterTens).en} minus what equals ${numWords(target).en}?` },
+              doneSpeak: stateEq(afterTens, '-', toTen, target),
+              hint: { zh: `看看 ${afterTens} 的个位，先把这些一减掉。`, en: `Look at the ones in ${afterTens}. Subtract those first.` },
+              focusPart: 1,
+            },
+            {
+              prompt: { zh: `${onesPart} 已经减了 ${toTen}，还要减几？`, en: `Of ${onesPart}, you have subtracted ${toTen}. How many remain?` },
+              question: `${onesPart} = ${toTen} + ?`,
+              answer: rest,
+              equation: `${onesPart} = ${toTen} + ${rest}`,
+              speak: { zh: `${numWords(onesPart).zh}可以分成${numWords(toTen).zh}和几？`, en: `${numWords(onesPart).en} can be split into ${numWords(toTen).en} and what?` },
+              doneSpeak: stateEq(toTen, '+', rest, onesPart),
+              hint: { zh: `可以算 ${onesPart} − ${toTen}。`, en: `Try ${onesPart} minus ${toTen}.` },
+              focusPart: 1,
+            },
+            {
+              prompt: { zh: `最后从 ${target} 再减 ${rest}。`, en: `Finally subtract ${rest} from ${target}.` },
+              question: `${target} − ${rest} = ?`,
+              answer: diff,
+              equation: `${target} − ${rest} = ${diff}`,
+              speak: askEq(target, '-', rest),
+              doneSpeak: stateEq(target, '-', rest, diff),
+              hint: { zh: `从 ${target} 倒着数 ${rest} 个。`, en: `Count back ${rest} from ${target}.` },
+              focusPart: 1,
+            },
+          ] : [{
             prompt: { zh: `再减去个位 ${onesPart}。`, en: `Then subtract ${onesPart}.` },
             question: `${afterTens} − ${onesPart} = ?`,
             answer: diff,
@@ -166,7 +210,7 @@ function placeValueSubRound(a, b) {
             doneSpeak: stateEq(afterTens, '-', onesPart, diff),
             hint: { zh: `从 ${afterTens} 倒着数 ${onesPart} 个。`, en: `Count back ${onesPart} from ${afterTens}.` },
             focusPart: 1,
-          },
+          }]),
         ],
         answer: diff,
       });
@@ -440,17 +484,18 @@ function strategySubRound(a, b, kind) {
 
 export default {
   id: 'subtraction',
-  levelCount: 8,
-  rounds: (level) => ([3, 4, 5, 6, 7, 8].includes(level) ? 5 : 8),
+  levelCount: 9,
+  rounds: (level) => ([3, 4, 5, 6, 7, 8, 9].includes(level) ? 5 : 8),
   levelHints: {
     1: { zh: '5以内', en: 'Within 5' },
     2: { zh: '10以内', en: 'Within 10' },
     3: { zh: '20以内 · 破十法', en: 'Within 20 · break ten' },
     4: { zh: '20以内 · 平十法', en: 'Within 20 · bridge to ten' },
-    5: { zh: '两位数不退位 · 分步互动', en: 'No regrouping · solve in parts' },
+    5: { zh: '两位数减两位数 · 不退位', en: 'Two-digit minus two-digit · no regrouping' },
     6: { zh: '两位数退位 · 借十法', en: 'Two-digit · regroup a ten' },
     7: { zh: '两位数退位 · 破十法', en: 'Two-digit · break a ten' },
     8: { zh: '两位数退位 · 平十法', en: 'Two-digit · bridge to ten' },
+    9: { zh: '两位数减两位数 · 退位', en: 'Two-digit minus two-digit · regrouping' },
   },
   celebrants: () => pickN([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], 3),
   makeRound(level) {
@@ -482,7 +527,11 @@ export default {
       const [a, b] = regroupingOperands();
       return strategySubRound(a, b, 'break-ten-place');
     }
-    const [a, b] = regroupingOperands();
-    return strategySubRound(a, b, 'flat-ten');
+    if (level === 8) {
+      const [a, b] = regroupingOperands();
+      return strategySubRound(a, b, 'flat-ten');
+    }
+    const [a, b] = twoDigitRegroupingOperands();
+    return placeValueSubRound(a, b, true);
   },
 };

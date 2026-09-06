@@ -45,7 +45,7 @@ export const GAMES = [
     name: { zh: '减法', en: 'Subtraction' },
     tagline: { zh: '跳走几个，还剩几个？', en: 'Some hop away — how many left?' },
     ages: '4-9',
-    levelCount: 8,
+    levelCount: 9,
     color: '#ee3a30',
     icon: () => renderBlockChar(5, { size: 17, ghostTop: 2, say: false }),
     load: () => import('./subtraction.js'),

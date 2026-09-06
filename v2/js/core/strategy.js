@@ -91,10 +91,7 @@ export function renderStrategyDemo(boardEl, api, config) {
     const prompt = typeof step.prompt === 'object' ? step.prompt : { zh: step.prompt, en: step.prompt };
     const question = typeof step.speak === 'object' ? step.speak : { zh: step.speak, en: step.speak };
     const say = includeOriginal ? api.speakIntro : api.speak;
-    say({
-      zh: [prompt.zh, question.zh].filter(Boolean).join(' '),
-      en: [prompt.en, question.en].filter(Boolean).join(' '),
-    });
+    say([prompt, question]);
   }
 
   function addTrail(step) {

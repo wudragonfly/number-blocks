@@ -22,7 +22,7 @@ and iPad browsers.
 |---|---|
 | 6 standalone HTML pages, ~7,400 lines, CSS+JS fully duplicated per page | SPA: one `index.html`, shared core modules, each game is a single ES module |
 | Blocks were plain colored squares | Parametric SVG characters: faces, moods, limbs, blinking, per-number identity |
-| Only counting/composition/+/−/× | 9 games through decimals & percent, with 5–8 difficulty levels |
+| Only counting/composition/+/−/× | 9 games through decimals & percent, with 5–9 difficulty levels |
 | Per-page ad-hoc settings | One settings store + one settings UI (global + per-game sections) |
 | No progress, no reward loop | Stars per game/level, streaks, confetti, celebration screens |
 | Full page reload between games; audio re-unlock every page | Hash-routed SPA: audio unlocked once, instant navigation |
@@ -30,7 +30,7 @@ and iPad browsers.
 ## 2. Audience, pedagogy & difficulty model
 
 Most games have **levels 1–5**; Addition extends to **level 7** and Subtraction to
-**level 8** for guided mental-math strategies. Levels are *per-game progressions*, not ages; each game
+**level 9** for guided mental-math strategies. Levels are *per-game progressions*, not ages; each game
 card shows a recommended age range, and each level shows a bilingual descriptor
 (e.g. Addition L2 = "和 ≤ 10 · Sums to 10"). A **global default level** seeds any game
 the child hasn't played; each game remembers its own level afterwards.
@@ -52,6 +52,8 @@ A wrong choice is removed and a non-revealing visual/counting hint is shown; the
 still completes the step rather than being advanced to the answer.
 Each guided round first speaks the original problem, then the first step, completing
 both languages for the problem before the step in bilingual mode.
+Spoken segments have a 400 ms pause between them, including the step instruction,
+its equation, and language changes.
 Every active step automatically speaks its instruction and equation, provides a replay
 button, and leaves each completed equation tappable for spoken review. Hints are spoken too.
 After the final strategy step, the original problem displays its answer and the complete
@@ -236,7 +238,9 @@ a make-ten pair.
 L1 within 5 · L2 within 10 · L3 interactive 破十法 within 20 · L4 interactive 平十法
 within 20 · L5 two-digit without regrouping, solved by splitting and subtracting tens then
 ones · L6 two-digit regrouping with 借十法 · L7 two-digit regrouping with 破十法 · L8
-two-digit regrouping with 平十法. Every strategy step waits for the child to choose an answer.
+two-digit regrouping with 平十法 · L9 two-digit minus two-digit with regrouping,
+subtracting tens first and bridging through a ten for the remaining ones.
+Every strategy step waits for the child to choose an answer.
 
 **multiplication · 乘法** (ages 6–10) — Arrays and equal groups build row-by-row with
 sound; skip counting aloud.

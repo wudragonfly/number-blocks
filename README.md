@@ -4,7 +4,7 @@ Bilingual (中文/English) math games for kids, hosted on GitHub Pages.
 
 | | Play | Source |
 |---|---|---|
-| **v2 — new** (2026): 9 games × 5–8 levels, ages 3–10, block characters, bilingual voice | [wudragonfly.github.io/number-blocks/v2](https://wudragonfly.github.io/number-blocks/v2/) | [`v2/`](v2/) |
+| **v2 — new** (2026): 9 games × 5–9 levels, ages 3–10, block characters, bilingual voice | [wudragonfly.github.io/number-blocks/v2](https://wudragonfly.github.io/number-blocks/v2/) | [`v2/`](v2/) |
 | **v1 — classic**: the original counting / addition / subtraction games | [wudragonfly.github.io/number-blocks/v1](https://wudragonfly.github.io/number-blocks/v1/) | [`v1/`](v1/) |
 
 The root page ([wudragonfly.github.io/number-blocks](https://wudragonfly.github.io/number-blocks/)) is a
