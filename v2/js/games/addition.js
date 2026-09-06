@@ -112,6 +112,8 @@ function makeTenRound(a, b, target) {
   return {
     prompt: `${a} + ${b} = ?`,
     speak: askEq(a, '+', b),
+    completedPrompt: `${a} + ${b} = ${sum}`,
+    completedSpeak: stateEq(a, '+', b, sum),
     autoSpeak: false,
     input: 'custom',
     answer: sum,

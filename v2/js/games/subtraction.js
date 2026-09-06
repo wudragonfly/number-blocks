@@ -118,6 +118,8 @@ function placeValueSubRound(a, b) {
   return {
     prompt: `${a} − ${b} = ?`,
     speak: askEq(a, '-', b),
+    completedPrompt: `${a} − ${b} = ${diff}`,
+    completedSpeak: stateEq(a, '-', b, diff),
     autoSpeak: false,
     input: 'custom',
     answer: diff,
@@ -414,6 +416,8 @@ function strategySubRound(a, b, kind) {
   return {
     prompt: `${a} − ${b} = ?`,
     speak: askEq(a, '-', b),
+    completedPrompt: `${a} − ${b} = ${diff}`,
+    completedSpeak: stateEq(a, '-', b, diff),
     autoSpeak: false,
     input: 'custom',
     answer: diff,

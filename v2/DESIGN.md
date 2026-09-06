@@ -54,6 +54,9 @@ Each guided round first speaks the original problem, then the first step, comple
 both languages for the problem before the step in bilingual mode.
 Every active step automatically speaks its instruction and equation, provides a replay
 button, and leaves each completed equation tappable for spoken review. Hints are spoken too.
+After the final strategy step, the original problem displays its answer and the complete
+equation is spoken once. The next round waits for the reading to finish, including both
+languages in bilingual mode, with a timeout fallback if speech cannot complete.
 
 ## 3. Information architecture
 

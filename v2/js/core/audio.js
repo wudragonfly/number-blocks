@@ -46,13 +46,13 @@ export function initAudio() {
       try { if (speechSynthesis.paused) speechSynthesis.resume(); } catch { /* ignore */ }
       // replay speech that was blocked before this gesture (autoplay policy)
       if (unspoken) {
-        const { parts, rate } = unspoken;
+        const { parts, rate, onEnd } = unspoken;
         unspoken = null;
         const s2 = getSettings();
         if (s2.audio.master && s2.audio.voice) {
           const token = ++speakToken;
           setTimeout(() => {
-            if (token === speakToken) queueParts(parts, rate, token, 0);
+            if (token === speakToken) queueParts(parts, rate, token, 0, onEnd);
           }, 60);
         }
       }
@@ -149,7 +149,7 @@ let loggedVoices = false;
 
 // attempt 0: picked voices · attempt 1: NO named voice, lang tag only (the
 // OS-default path that always works) · then stash for gesture replay
-function queueParts(parts, rate, token, attempt = 0) {
+function queueParts(parts, rate, token, attempt = 0, onEnd) {
   const synth = speechSynthesis;
   try { synth.resume(); } catch { /* ignore */ }
   holdUtterances = [];
@@ -169,6 +169,9 @@ function queueParts(parts, rate, token, attempt = 0) {
     u.rate = rate;
     u.pitch = 1.05;
     u.onstart = () => { started = true; unspoken = null; };
+    if (p === parts[parts.length - 1]) {
+      u.onend = () => { if (token === speakToken) onEnd?.(); };
+    }
     holdUtterances.push(u);
     try { synth.speak(u); } catch { /* ignore */ }
   }
@@ -183,11 +186,11 @@ function queueParts(parts, rate, token, attempt = 0) {
       try { synth.cancel(); } catch { /* ignore */ }
       console.info('[number-blocks] speech never started — retrying with the system default voice');
       setTimeout(() => {
-        if (token === speakToken) queueParts(parts, rate, token, 1);
+        if (token === speakToken) queueParts(parts, rate, token, 1, onEnd);
       }, 120);
     } else {
       // even the voiceless retry never started — replay on the next tap
-      unspoken = { parts, rate };
+      unspoken = { parts, rate, onEnd };
     }
   }, 1200);
 }
@@ -200,18 +203,19 @@ function queueParts(parts, rate, token, attempt = 0) {
  */
 let warnedOff = false;
 
-export function speak(msg, { interrupt = true } = {}) {
+export function speak(msg, { interrupt = true, onEnd } = {}) {
   const s = getSettings();
-  if (!('speechSynthesis' in window)) return;
+  if (!('speechSynthesis' in window)) { onEnd?.(); return; }
   if (!s.audio.master || !s.audio.voice) {
     if (!warnedOff) {
       warnedOff = true;
       console.info('[number-blocks] speech is switched OFF in settings (⚙️ → 声音 → 语音朗读) — sfx may still play');
     }
+    onEnd?.();
     return;
   }
   warnedOff = false;
-  if (msg == null) return;
+  if (msg == null) { onEnd?.(); return; }
   const parts = [];
   for (let message of Array.isArray(msg) ? msg : [msg]) {
     if (message == null) continue;
@@ -229,7 +233,7 @@ export function speak(msg, { interrupt = true } = {}) {
   }
 
   const clean = parts.filter((p) => p.text);
-  if (!clean.length) return;
+  if (!clean.length) { onEnd?.(); return; }
 
   const synth = speechSynthesis;
   const token = ++speakToken;
@@ -242,7 +246,7 @@ export function speak(msg, { interrupt = true } = {}) {
   // (e.g. fast counting taps) collapse to the latest request
   speakTimer = setTimeout(() => {
     if (token !== speakToken) return;
-    queueParts(clean, s.audio.rate || 1, token, 0);
+    queueParts(clean, s.audio.rate || 1, token, 0, onEnd);
   }, interrupt ? 80 : 0);
 }
 

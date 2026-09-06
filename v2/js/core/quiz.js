@@ -43,6 +43,7 @@ export function runQuiz(container, game, ctx) {
   let round = null;
   let pad = null;
   let customKeyHandler = null;
+  let completed = false;
   const results = [];
   const timeouts = new Set();
 
@@ -75,12 +76,13 @@ export function runQuiz(container, game, ctx) {
   container.replaceChildren(rootEl);
 
   function speakPrompt() {
-    if (round) speak(round.speak || round.prompt);
+    if (round) speak((completed && round.completedSpeak) || round.speak || round.prompt);
   }
 
   // ---------------- round lifecycle ----------------
   function startRound() {
     round = game.makeRound(level, i);
+    completed = false;
     attempts = 0;
     locked = false;
     pad = null;
@@ -134,9 +136,24 @@ export function runQuiz(container, game, ctx) {
     confettiBurst(btn || boardEl);
     const praise = pick(PRAISES);
     feedbackPop(boardEl, praise, 'good');
-    speak(praise);
     round.onCorrect?.(boardEl);
-    schedule(next, round.correctDelay ?? 1700);
+    if (round.completedPrompt && round.completedSpeak) {
+      completed = true;
+      promptText.replaceChildren(bi(round.completedPrompt));
+      const completedRound = round;
+      let advanced = false;
+      const advance = () => {
+        if (advanced || destroyed || round !== completedRound) return;
+        advanced = true;
+        next();
+      };
+      speak(round.completedSpeak, { onEnd: () => schedule(advance, 900) });
+      // Recover if speech is blocked, interrupted by replay, or never sends onend.
+      schedule(advance, 30000);
+    } else {
+      speak(praise);
+      schedule(next, round.correctDelay ?? 1700);
+    }
   }
 
   function onWrong(value, btn) {
