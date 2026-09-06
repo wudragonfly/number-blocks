@@ -87,6 +87,9 @@ function renderHome() {
       el('div', { class: 'card-tag' }, bi(g.tagline)),
       el('div', { class: 'card-meta' },
         el('span', { class: 'chip' }, bi(t('ages', { a: g.ages }), { row: true })),
+        g.levelCount > 5
+          ? el('span', { class: 'chip chip-new-levels' }, bi({ zh: `${g.levelCount} 关`, en: `${g.levelCount} levels` }, { row: true }))
+          : null,
         stars > 0 ? el('span', { class: 'chip chip-stars' }, `⭐ × ${stars}`) : null
       )
     );
@@ -145,8 +148,10 @@ async function mountGame(id, level = null) {
   }
   if (seq !== mountSeq) return; // user navigated away while loading
 
-  if (level != null) setGameLevel(id, level);
-  const lvl = level ?? getGameLevel(id);
+  const levelCount = (module.levelCount ?? Object.keys(module.levelHints || {}).length) || 5;
+  const requestedLevel = level ?? getGameLevel(id);
+  const lvl = Math.max(1, Math.min(levelCount, requestedLevel));
+  if (level != null || lvl !== requestedLevel) setGameLevel(id, lvl);
   currentGame = { id, meta, module };
 
   const ctx = {

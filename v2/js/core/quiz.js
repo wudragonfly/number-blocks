@@ -9,7 +9,8 @@ import { renderBlockChar } from './blocks.js';
 
 export function openLevelPicker(game, current, onPick) {
   const list = el('div', { class: 'level-list' });
-  for (let lvl = 1; lvl <= 5; lvl++) {
+  const levelCount = (game.levelCount ?? Object.keys(game.levelHints || {}).length) || 5;
+  for (let lvl = 1; lvl <= levelCount; lvl++) {
     const earned = levelStars(game.id, lvl);
     const item = el('button', { class: 'level-item' + (lvl === current ? ' on' : '') },
       el('span', { class: 'level-num' }, String(lvl)),
@@ -31,8 +32,8 @@ export function openLevelPicker(game, current, onPick) {
  * Returns { destroy }.
  */
 export function runQuiz(container, game, ctx) {
-  const rounds = game.rounds ?? 8;
   const { level } = ctx;
+  const rounds = typeof game.rounds === 'function' ? game.rounds(level) : (game.rounds ?? 8);
 
   let i = 0;
   let firstTry = 0;
@@ -41,6 +42,7 @@ export function runQuiz(container, game, ctx) {
   let destroyed = false;
   let round = null;
   let pad = null;
+  let customKeyHandler = null;
   const results = [];
   const timeouts = new Set();
 
@@ -82,9 +84,11 @@ export function runQuiz(container, game, ctx) {
     attempts = 0;
     locked = false;
     pad = null;
+    customKeyHandler = null;
     dots.update(i, results);
 
     promptText.replaceChildren(bi(round.prompt));
+    boardEl.className = 'quiz-board';
     boardEl.replaceChildren();
     inputEl.replaceChildren();
 
@@ -108,7 +112,7 @@ export function runQuiz(container, game, ctx) {
       pad = makeNumpad({ onSubmit: (v) => handleAnswer(v), maxLen: round.maxLen ?? 3 });
       inputEl.appendChild(pad.el);
     }
-    schedule(speakPrompt, 250);
+    if (round.autoSpeak !== false) schedule(speakPrompt, 250);
   }
 
   function handleAnswer(value, btn) {
@@ -177,6 +181,8 @@ export function runQuiz(container, game, ctx) {
     wrong: () => onWrong(null, null),
     isLocked: () => locked,
     registerAttempt: () => { attempts++; },
+    schedule,
+    setKeyHandler: (handler) => { customKeyHandler = handler; },
   };
 
   function next() {
@@ -189,11 +195,12 @@ export function runQuiz(container, game, ctx) {
     const scorePct = (firstTry / rounds) * 100;
     const stars = scorePct >= 90 ? 3 : scorePct >= 65 ? 2 : 1;
     recordResult(game.id, level, { stars, scorePct });
+    const levelCount = (game.levelCount ?? Object.keys(game.levelHints || {}).length) || 5;
     endScreen(container, {
       stars,
       score: t('scoreLine', { a: firstTry, b: rounds }),
       celebrants: game.celebrants?.(level),
-      canLevelUp: level < 5 && stars >= 2,
+      canLevelUp: level < levelCount && stars >= 2,
       onReplay: () => ctx.onLevelChange(level),
       onNext: () => ctx.onLevelChange(level + 1),
       onHome: () => ctx.onHome(),
@@ -203,6 +210,10 @@ export function runQuiz(container, game, ctx) {
   // ---------------- keyboard ----------------
   function onKey(e) {
     if (destroyed || locked) return;
+    if (customKeyHandler?.(e.key)) {
+      e.preventDefault();
+      return;
+    }
     if (pad) {
       pad.handleKey(e.key);
       return;

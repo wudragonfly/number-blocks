@@ -69,9 +69,10 @@ export function openSettings(gameCtx = null) {
   // ---- per-game section (when inside a game) ----
   if (gameCtx) {
     const { id, meta, module } = gameCtx;
+    const levelCount = (module?.levelCount ?? Object.keys(module?.levelHints || {}).length) || 5;
     const kids = [
       segControl(
-        [1, 2, 3, 4, 5].map((n) => ({ value: n, label: String(n) })),
+        Array.from({ length: levelCount }, (_, i) => i + 1).map((n) => ({ value: n, label: String(n) })),
         (v) => getGameLevel(id) === v,
         (v) => {
           setGameLevel(id, v);

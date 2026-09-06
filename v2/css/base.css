@@ -298,6 +298,7 @@ body[data-lang="both"] .bi-en { font-size: 0.62em; opacity: 0.78; font-weight: 6
   border: 2px solid color-mix(in srgb, var(--game-color, var(--accent)) 45%, white);
 }
 .chip-stars { background: #fff6d6; border-color: #ffd76e; }
+.chip-new-levels { background: #eaf8ec; border-color: #88cf91; color: #267332; }
 
 .home-footer {
   margin-top: 18px;

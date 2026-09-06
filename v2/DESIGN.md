@@ -22,14 +22,15 @@ and iPad browsers.
 |---|---|
 | 6 standalone HTML pages, ~7,400 lines, CSS+JS fully duplicated per page | SPA: one `index.html`, shared core modules, each game is a single ES module |
 | Blocks were plain colored squares | Parametric SVG characters: faces, moods, limbs, blinking, per-number identity |
-| Only counting/composition/+/−/× | 9 games through decimals & percent, 5 difficulty levels each |
+| Only counting/composition/+/−/× | 9 games through decimals & percent, with 5–8 difficulty levels |
 | Per-page ad-hoc settings | One settings store + one settings UI (global + per-game sections) |
 | No progress, no reward loop | Stars per game/level, streaks, confetti, celebration screens |
 | Full page reload between games; audio re-unlock every page | Hash-routed SPA: audio unlocked once, instant navigation |
 
 ## 2. Audience, pedagogy & difficulty model
 
-Every game has **levels 1–5**. Levels are *per-game progressions*, not ages; each game
+Most games have **levels 1–5**; Addition extends to **level 7** and Subtraction to
+**level 8** for guided mental-math strategies. Levels are *per-game progressions*, not ages; each game
 card shows a recommended age range, and each level shows a bilingual descriptor
 (e.g. Addition L2 = "和 ≤ 10 · Sums to 10"). A **global default level** seeds any game
 the child hasn't played; each game remembers its own level afterwards.
@@ -42,7 +43,15 @@ Feedback policy (uniform across games):
 4. 3-correct streak → bonus fanfare. End of session → star screen (always ≥ 1 star:
    3★ ≥ 90% first-try accuracy, 2★ ≥ 65%, else 1★).
 
-Sessions are short by design: **8 rounds** per quiz (Memory Match is one board).
+Sessions are short by design: **8 rounds** per standard quiz, **5 rounds** for guided
+multi-step strategy levels (Memory Match is one board).
+
+Guided strategy rounds do not reveal the calculation automatically. The child answers
+each split or partial equation, and only a correct choice unlocks the next animation.
+A wrong choice is removed and a non-revealing visual/counting hint is shown; the child
+still completes the step rather than being advanced to the answer.
+Every active step automatically speaks its instruction and equation, provides a replay
+button, and leaves each completed equation tappable for spoken review. Hints are spoken too.
 
 ## 3. Information architecture
 
@@ -157,7 +166,7 @@ by the rights holders.
 {
   language: 'both' | 'zh' | 'en',
   audio: { master, voice, sfx, rate, voiceEn, voiceZh },
-  defaultLevel: 1..5,           // seeds games never played
+  defaultLevel: 1..5,           // seeds games never played; per-game levels may go higher
   perGame: { [id]: { level, ...gameOptions } }
 }
 ```
@@ -175,8 +184,9 @@ round factory:
 
 ```js
 export default {
-  id, name, rounds: 8,
-  levelHints: { 1: {en,zh}, … 5: {en,zh} },       // shown in level picker
+  id, name, rounds: 8 | ((level) => 5),
+  levelCount?: 5,                                  // defaults to hint count
+  levelHints: { 1: {en,zh}, … },                   // shown in level picker
   extraSettings?: [...],
   makeRound(level, roundIndex) => ({
     prompt: {en, zh},              // shown + spoken
@@ -197,7 +207,7 @@ star **end screen** (replay / next level / home). `endScreen()` is exported sepa
 so board-style games (Memory Match) reuse it. Progress (`js/core/progress.js`,
 `nb.progress`) records stars/best per game+level; home tiles show total stars.
 
-## 11. Game specifications (levels 1→5)
+## 11. Game specifications
 
 **counting · 数一数** (ages 3–6) — Tap blocks to count: each tap lights the block,
 plays a rising note, and speaks the count. Round types: count-then-pick-numeral,
@@ -212,12 +222,16 @@ tens.
 
 **addition · 加法** (ages 4–9) — Two characters walk together and **merge** into the
 sum after you answer.
-L1 sums ≤ 5 · L2 ≤ 10 · L3 ≤ 20 crossing ten (make-ten visual hint) · L4 two-digit,
-numpad, carrying (rods+ones visual) · L5 missing addend & three addends.
+L1 sums ≤ 5 · L2 ≤ 10 · L3 crossing ten with interactive 凑十法 · L4 two-digit without
+carrying · L5 two-digit plus one-digit carrying by solving each make-the-next-ten step · L6
+two-digit plus two-digit carrying with the same interactive strategy · L7 three addends with
+a make-ten pair.
 
 **subtraction · 减法** (ages 4–9) — Blocks hop away; what's left?
-L1 within 5 · L2 within 10 · L3 within 20 (borrow shown by breaking a ten-rod) ·
-L4 two-digit, numpad · L5 missing subtrahend & difference ("7比3多几?").
+L1 within 5 · L2 within 10 · L3 interactive 破十法 within 20 · L4 interactive 平十法
+within 20 · L5 two-digit without regrouping, solved by splitting and subtracting tens then
+ones · L6 two-digit regrouping with 借十法 · L7 two-digit regrouping with 破十法 · L8
+two-digit regrouping with 平十法. Every strategy step waits for the child to choose an answer.
 
 **multiplication · 乘法** (ages 6–10) — Arrays and equal groups build row-by-row with
 sound; skip counting aloud.
