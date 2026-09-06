@@ -50,6 +50,8 @@ Guided strategy rounds do not reveal the calculation automatically. The child an
 each split or partial equation, and only a correct choice unlocks the next animation.
 A wrong choice is removed and a non-revealing visual/counting hint is shown; the child
 still completes the step rather than being advanced to the answer.
+Each guided round first speaks the original problem, then the first step, completing
+both languages for the problem before the step in bilingual mode.
 Every active step automatically speaks its instruction and equation, provides a replay
 button, and leaves each completed equation tappable for spoken review. Hints are spoken too.
 

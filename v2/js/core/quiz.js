@@ -174,6 +174,7 @@ export function runQuiz(container, game, ctx) {
 
   const api = {
     speak,
+    speakIntro: (step) => speak([round.speak || round.prompt, step]),
     sfx,
     boardEl,
     submit: (v, btn) => handleAnswer(v, btn),

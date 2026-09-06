@@ -87,10 +87,11 @@ export function renderStrategyDemo(boardEl, api, config) {
     partEls.forEach((part, i) => part.classList.toggle('is-focus', i === index));
   }
 
-  function speakStep(step = config.steps[stepIndex]) {
+  function speakStep(step = config.steps[stepIndex], includeOriginal = false) {
     const prompt = typeof step.prompt === 'object' ? step.prompt : { zh: step.prompt, en: step.prompt };
     const question = typeof step.speak === 'object' ? step.speak : { zh: step.speak, en: step.speak };
-    api.speak({
+    const say = includeOriginal ? api.speakIntro : api.speak;
+    say({
       zh: [prompt.zh, question.zh].filter(Boolean).join(' '),
       en: [prompt.en, question.en].filter(Boolean).join(' '),
     });
@@ -209,7 +210,7 @@ export function renderStrategyDemo(boardEl, api, config) {
     focusPart(step.focusPart);
     const speakingStep = stepIndex;
     api.schedule(() => {
-      if (!finished && stepIndex === speakingStep) speakStep(step);
+      if (!finished && stepIndex === speakingStep) speakStep(step, speakingStep === 0);
     }, 180);
   }
 

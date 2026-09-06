@@ -196,6 +196,7 @@ function queueParts(parts, rate, token, attempt = 0) {
  * speak({en, zh}) — respects the language mode:
  * 'zh'/'en' speak one language; 'both' speaks 中文 then English.
  * The native speechSynthesis queue plays the parts in order.
+ * An array reads each message fully before moving to the next, including both languages.
  */
 let warnedOff = false;
 
@@ -211,16 +212,20 @@ export function speak(msg, { interrupt = true } = {}) {
   }
   warnedOff = false;
   if (msg == null) return;
-  if (typeof msg === 'string' || typeof msg === 'number') msg = { en: String(msg), zh: String(msg) };
-
   const parts = [];
-  if (s.language === 'zh') {
-    parts.push({ text: msg.zh ?? msg.en, lang: 'zh' });
-  } else if (s.language === 'en') {
-    parts.push({ text: msg.en ?? msg.zh, lang: 'en' });
-  } else {
-    if (msg.zh) parts.push({ text: msg.zh, lang: 'zh' });
-    if (msg.en && msg.en !== msg.zh) parts.push({ text: msg.en, lang: 'en' });
+  for (let message of Array.isArray(msg) ? msg : [msg]) {
+    if (message == null) continue;
+    if (typeof message === 'string' || typeof message === 'number') {
+      message = { en: String(message), zh: String(message) };
+    }
+    if (s.language === 'zh') {
+      parts.push({ text: message.zh ?? message.en, lang: 'zh' });
+    } else if (s.language === 'en') {
+      parts.push({ text: message.en ?? message.zh, lang: 'en' });
+    } else {
+      if (message.zh) parts.push({ text: message.zh, lang: 'zh' });
+      if (message.en && message.en !== message.zh) parts.push({ text: message.en, lang: 'en' });
+    }
   }
 
   const clean = parts.filter((p) => p.text);
