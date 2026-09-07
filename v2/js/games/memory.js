@@ -93,10 +93,10 @@ function fracPctDeck(pairs) {
 }
 
 function buildDeck(level, theme) {
-  const pairs = level === 1 ? 3 : level <= 3 ? 6 : 8;
+  const pairs = { 1: 3, 2: 6, 3: 8, 4: 10, 5: 6, 6: 8, 7: 8 }[level] || 8;
   const kind = theme && theme !== 'auto'
     ? theme
-    : level === 1 || level === 2 ? 'numbers' : level === 3 ? 'addition' : level === 4 ? 'multiplication' : 'fractions';
+    : level <= 4 ? 'numbers' : level === 5 ? 'addition' : level === 6 ? 'multiplication' : 'fractions';
   if (kind === 'numbers') return numbersDeck(level === 1 ? 5 : 10, pairs);
   if (kind === 'addition') return additionDeck(pairs);
   if (kind === 'multiplication') return multiplicationDeck(pairs);
@@ -105,12 +105,15 @@ function buildDeck(level, theme) {
 
 const game = {
   id: 'memory',
+  levelCount: 7,
   levelHints: {
     1: { zh: '数字配方块 1-5', en: 'Numbers & blocks 1-5' },
-    2: { zh: '数字配方块 1-10', en: 'Numbers & blocks 1-10' },
-    3: { zh: '加法配得数', en: 'Sums & totals' },
-    4: { zh: '乘法配得数', en: 'Products & totals' },
-    5: { zh: '分数=小数=百分数', en: 'Fraction · decimal · percent' },
+    2: { zh: '1-10 · 6对12张', en: '1-10 · 6 pairs, 12 cards' },
+    3: { zh: '1-10 · 8对16张', en: '1-10 · 8 pairs, 16 cards' },
+    4: { zh: '1-10 · 10对20张', en: '1-10 · 10 pairs, 20 cards' },
+    5: { zh: '加法配得数', en: 'Sums & totals' },
+    6: { zh: '乘法配得数', en: 'Products & totals' },
+    7: { zh: '分数=小数=百分数', en: 'Fraction · decimal · percent' },
   },
   extraSettings: [
     {
@@ -217,7 +220,7 @@ const game = {
       endScreen(container, {
         stars,
         score: t('movesLine', { n: moves }),
-        canLevelUp: level < 5 && stars >= 2,
+        canLevelUp: level < game.levelCount && stars >= 2,
         onReplay: () => ctx.onLevelChange(level),
         onNext: () => ctx.onLevelChange(level + 1),
         onHome: () => ctx.onHome(),

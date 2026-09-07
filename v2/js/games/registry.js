@@ -91,6 +91,7 @@ export const GAMES = [
   },
   {
     id: 'memory',
+    levelCount: 7,
     name: { zh: '记忆配对', en: 'Memory Match' },
     tagline: { zh: '翻一翻，找朋友！', en: 'Flip cards, find the pairs!' },
     ages: '3-10',

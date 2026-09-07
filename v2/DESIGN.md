@@ -29,7 +29,7 @@ and iPad browsers.
 
 ## 2. Audience, pedagogy & difficulty model
 
-Most games have **levels 1–5**; Addition extends to **level 7** and Subtraction to
+Most games have **levels 1–5**; Addition and Memory Match extend to **level 7** and Subtraction to
 **level 9** for guided mental-math strategies. Levels are *per-game progressions*, not ages; each game
 card shows a recommended age range, and each level shows a bilingual descriptor
 (e.g. Addition L2 = "和 ≤ 10 · Sums to 10"). A **global default level** seeds any game
@@ -271,7 +271,8 @@ decimal sums to 1, mini "sale price" stories.
 
 **memory · 记忆配对** (ages 3–10) — Classic flip-and-match board; every flip speaks
 the card. Pairs by level: L1 numeral↔character 1–5 (6 cards) · L2 1–10 (12) ·
-L3 sum↔total (12) · L4 product↔total (16) · L5 fraction↔percent↔decimal (16).
+L3 1–10 (16 cards, 8 pairs) · L4 1–10 (20 cards, all 10 pairs) ·
+L5 sum↔total (12) · L6 product↔total (16) · L7 fraction↔percent↔decimal (16).
 Extra setting: pair theme override. Stars by move efficiency.
 
 ## 12. File structure & how to add a game

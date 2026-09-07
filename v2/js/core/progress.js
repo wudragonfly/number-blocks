@@ -2,7 +2,7 @@
 import { load, save } from './storage.js';
 
 let data = load('progress', {}); // { [gameId]: { [level]: {stars, best, plays} } }
-const PROGRESS_SCHEMA = 3;
+const PROGRESS_SCHEMA = 4;
 const storedSchema = data.__schemaVersion || 1;
 
 // Clear replaced level slots once so old stars are not assigned to new games.
@@ -11,6 +11,13 @@ if (storedSchema < 2) {
 }
 if (storedSchema < 3) {
   if (data.addition) delete data.addition[6];
+}
+if (storedSchema < 4 && data.memory) {
+  // Two new number-matching levels move the existing themes from 3–5 to 5–7.
+  for (let level = 5; level >= 3; level--) {
+    if (data.memory[level]) data.memory[level + 2] = data.memory[level];
+    delete data.memory[level];
+  }
 }
 if (storedSchema < PROGRESS_SCHEMA) {
   data.__schemaVersion = PROGRESS_SCHEMA;

@@ -3,7 +3,7 @@
 Bilingual (中文/English) math games for kids aged 3–10, styled after the block
 characters kids love — counting, number bonds, + − × ÷, fractions, decimals &
 percent, and a memory match game. Voice everywhere, stars to earn, five
-difficulty levels in most games, seven in Addition, and nine in Subtraction.
+difficulty levels in most games, seven in Addition and Memory Match, and nine in Subtraction.
 
 **Design:** see [DESIGN.md](DESIGN.md). **Stack:** plain HTML/CSS/JS ES modules —
 no build step, no dependencies.
