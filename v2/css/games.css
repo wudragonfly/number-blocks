@@ -59,6 +59,33 @@
   gap: 10px;
 }
 
+.strategy-guided {
+  display: flex;
+  flex-direction: column;
+  gap: inherit;
+}
+.strategy-direct-toggle {
+  align-self: center;
+  min-height: 48px;
+  padding: 6px 18px;
+  border: 2px solid #b9c4f5;
+  border-radius: 14px;
+  background: #eef0ff;
+  color: var(--accent);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.strategy-direct-toggle:disabled { opacity: 0.5; cursor: default; }
+.strategy-direct-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 18px 8px;
+  text-align: center;
+}
+
 .strategy-method {
   min-width: 0;
   display: inline-flex;

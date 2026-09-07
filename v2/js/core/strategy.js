@@ -44,7 +44,7 @@ export function renderStrategyDemo(boardEl, api, config) {
   });
   const parts = el('div', { class: 'strategy-parts' }, partChildren);
 
-  const stepCount = el('div', { class: 'strategy-step-count' });
+  const stepCount = el('div', { class: 'strategy-step-count', hidden: '' });
   const trail = el('div', {
     class: 'strategy-trail',
     'aria-label': 'Completed steps 已完成步骤',
@@ -55,19 +55,34 @@ export function renderStrategyDemo(boardEl, api, config) {
     el('span', { class: 'strategy-result-mark' }, '✓'),
     compactNumber(config.answer, 11)
   );
-
-  const demo = el('div', { class: 'strategy-demo' },
-    el('div', { class: 'strategy-head' },
-      el('div', { class: 'strategy-method' }, '✨ ', bi(config.method, { row: true })),
-      stepCount
-    ),
+  const directToggle = el('button', {
+    class: 'strategy-direct-toggle', 'aria-expanded': 'false',
+  }, bi({ zh: '我需要帮助', en: 'I need help' }));
+  const directFeedback = el('div', { class: 'strategy-feedback', 'aria-live': 'polite' });
+  const directChoices = el('div', { class: 'strategy-choice-grid' });
+  const directPanel = el('div', { class: 'strategy-direct-panel' },
+    bi({ zh: '请选择原题的最终答案', en: 'Choose the final answer to the original problem' }),
+    directChoices,
+    directFeedback
+  );
+  const guidedPanel = el('div', { class: 'strategy-guided', hidden: '' },
     el('div', { class: 'strategy-split-row' },
       el('div', { class: 'strategy-source-wrap' }, bi(config.splitLabel), source),
       el('div', { class: 'strategy-arrow' }, '➜'),
       parts
     ),
     trail,
-    challenge,
+    challenge
+  );
+
+  const demo = el('div', { class: 'strategy-demo' },
+    el('div', { class: 'strategy-head' },
+      el('div', { class: 'strategy-method' }, '✨ ', bi(config.method, { row: true })),
+      stepCount
+    ),
+    directToggle,
+    directPanel,
+    guidedPanel,
     result
   );
 
@@ -75,6 +90,64 @@ export function renderStrategyDemo(boardEl, api, config) {
   let settling = false;
   let finished = false;
   let activeButtons = [];
+  let directMode = true;
+  let speechVersion = 0;
+  const finalButtons = numberChoices(config.answer, {
+    count: 3, min: 0, max: Math.max(10, config.answer + 10),
+  }).map((value, index) => {
+    const button = el('button', {
+      class: 'strategy-choice',
+      'aria-label': `${value}, choice ${index + 1}`,
+      'aria-keyshortcuts': String(index + 1),
+    }, String(value));
+    button.addEventListener('click', () => {
+      if (!directMode || settling || finished || api.isLocked() || button.disabled) return;
+      if (value !== config.answer) {
+        api.registerAttempt();
+        api.sfx.wrong();
+        button.disabled = true;
+        button.classList.add('is-wrong', 'anim-wobble');
+        const hint = { zh: '再想一想，也可以点击“我需要帮助”。', en: 'Try again, or tap “I need help”.' };
+        directFeedback.replaceChildren(bi(hint));
+        api.speak(hint);
+        return;
+      }
+      button.classList.add('is-correct');
+      complete();
+    });
+    directChoices.appendChild(button);
+    return button;
+  });
+
+  directToggle.addEventListener('click', () => {
+    if (settling || finished || api.isLocked()) return;
+    directMode = !directMode;
+    speechVersion++;
+    directPanel.hidden = !directMode;
+    guidedPanel.hidden = directMode;
+    stepCount.hidden = directMode;
+    directToggle.setAttribute('aria-expanded', String(!directMode));
+    directToggle.replaceChildren(bi(directMode
+      ? { zh: '我需要帮助', en: 'I need help' }
+      : { zh: '我会了，直接答题', en: 'I know it — answer directly' }));
+    api.sfx.tap();
+    if (directMode) api.speakIntro([]);
+    else speakStep();
+  });
+
+  function complete() {
+    finished = true;
+    settling = true;
+    speechVersion++;
+    directToggle.disabled = true;
+    [...activeButtons, ...finalButtons].forEach((button) => { button.disabled = true; });
+    focusPart(null);
+    result.removeAttribute('hidden');
+    void result.offsetWidth;
+    result.classList.add('is-visible');
+    demo.classList.add('is-complete');
+    api.correct();
+  }
 
   function revealParts(indices = []) {
     for (const index of indices) {
@@ -111,7 +184,7 @@ export function renderStrategyDemo(boardEl, api, config) {
   }
 
   function answerStep(value, button) {
-    if (settling || finished || api.isLocked()) return;
+    if (directMode || settling || finished || api.isLocked() || button.disabled) return;
     const step = config.steps[stepIndex];
     if (String(value) !== String(step.answer)) {
       api.registerAttempt();
@@ -130,6 +203,7 @@ export function renderStrategyDemo(boardEl, api, config) {
     }
 
     settling = true;
+    directToggle.disabled = true;
     button.classList.add('is-correct');
     activeButtons.forEach((btn) => { btn.disabled = true; });
     api.sfx.pop(stepIndex + 2);
@@ -145,19 +219,14 @@ export function renderStrategyDemo(boardEl, api, config) {
 
     const isLast = stepIndex === config.steps.length - 1;
     if (isLast) {
-      finished = true;
-      focusPart(null);
-      result.removeAttribute('hidden');
-      void result.offsetWidth;
-      result.classList.add('is-visible');
-      demo.classList.add('is-complete');
-      api.schedule(() => api.correct(), 650);
+      complete();
       return;
     }
 
     api.schedule(() => {
       stepIndex++;
       settling = false;
+      directToggle.disabled = false;
       renderStep();
     }, 620);
   }
@@ -206,14 +275,18 @@ export function renderStrategyDemo(boardEl, api, config) {
     );
     focusPart(step.focusPart);
     const speakingStep = stepIndex;
+    const speakingVersion = ++speechVersion;
     api.schedule(() => {
-      if (!finished && stepIndex === speakingStep) speakStep(step, speakingStep === 0);
+      if (!finished && speechVersion === speakingVersion && stepIndex === speakingStep) {
+        if (directMode) api.speakIntro([]);
+        else speakStep(step);
+      }
     }, 180);
   }
 
   api.setKeyHandler?.((key) => {
     if (!/^[1-3]$/.test(key) || settling || finished) return false;
-    const button = activeButtons[Number(key) - 1];
+    const button = (directMode ? finalButtons : activeButtons)[Number(key) - 1];
     if (!button || button.disabled) return false;
     button.click();
     return true;

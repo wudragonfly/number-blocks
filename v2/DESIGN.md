@@ -50,8 +50,13 @@ Guided strategy rounds do not reveal the calculation automatically. The child an
 each split or partial equation, and only a correct choice unlocks the next animation.
 A wrong choice is removed and a non-revealing visual/counting hint is shown; the child
 still completes the step rather than being advanced to the answer.
-Each guided round first speaks the original problem, then the first step, completing
-both languages for the problem before the step in bilingual mode.
+Every guided addition/subtraction round starts with three final-answer choices and
+speaks only the original problem. “I need help” reveals the guided steps and speaks
+the active step. Children can switch back to direct answers without losing step progress. Wrong direct choices
+count against first-try accuracy and are disabled; a correct final answer completes the
+round immediately with the same original-equation display and spoken answer.
+In bilingual mode, the original problem is spoken in both languages; step instructions
+are spoken only after the child requests help.
 Spoken segments have a 400 ms pause between them, including the step instruction,
 its equation, and language changes.
 Every active step automatically speaks its instruction and equation, provides a replay
